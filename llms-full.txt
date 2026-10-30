@@ -490,9 +490,9 @@ One expense review. Time counts only model waiting, at about 7 s per turn.
 
 ```
 @article{wang2026hcu,
-  title  = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
-  author = {Wang, Haoqing and Zhang, Xiaoyi and Fan, Sicheng and Zhang, Zhexin and Zhang, Xinjie and Li, Jiahao and Li, Bin and Lu, Yan},
-  year   = {2026},
-  note   = {Preprint}
+  title   = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
+  author  = {Haoqing Wang and Xiaoyi Zhang and Sicheng Fan and Zhexin Zhang and Xinjie Zhang and Jiahao Li and Bin Li and Yan Lu},
+  journal = {arXiv preprint},
+  year    = {2026}
 }
 ```
