@@ -243,7 +243,8 @@ The paper is in [paper/Hybrid-Computer-Use.pdf](paper/Hybrid-Computer-Use.pdf).
 ```bibtex
 @article{wang2026hcu,
   title   = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
-  author  = {Haoqing Wang and Xiaoyi Zhang and Sicheng Fan and Zhexin Zhang and Xinjie Zhang and Jiahao Li and Bin Li and Yan Lu},
+  author  = {Wang, Haoqing and Zhang, Xiaoyi and Fan, Sicheng and Zhang, Zhexin and Zhang, Xinjie and Li, Jiahao and Li, Bin and Lu, Yan},
+  journal = {arXiv preprint},
   year    = {2026}
 }
 ```
