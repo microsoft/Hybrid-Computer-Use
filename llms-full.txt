@@ -1,0 +1,498 @@
+# Hybrid Computer Use (HCU): full page text
+
+> The project page of Hybrid Computer Use as Markdown, with every result table. The interactive page is index.html; the Chinese version is zh.html. Code: https://github.com/microsoft/Hybrid-Computer-Use. Paper: assets/Hybrid-Computer-Use.pdf.
+
+# Hybrid Computer Use
+
+A Unified Programmatic, Semantic, and Visual Interface for General Agents
+
+Haoqing Wang^1*, Xiaoyi Zhang^1†, Sicheng Fan^2, Zhexin Zhang^3, Xinjie Zhang^1, Jiahao Li^1, Bin Li^1, Yan Lu^1
+
+^1Microsoft Research, ^2Fudan University, ^3Tsinghua University
+
+* Work done during an internship at Microsoft Research. † Project lead.
+
+- Linux · 108 tasks 72.37% OSWorld 2.0 Highest full-set Partial
+- Linux · 360 tasks 70.13% OSWorld 1.0 +7.66 pp · −59.1% cost
+- Windows · 111 tasks 80.86% Windows Agent Arena +8.97 pp · −50.6% cost
+- macOS · 28 UI tasks 89.3% MacAgentBench +3.6 pp · −51.4% cost
+- Linux · 114 tasks 53.25% WeaveBench +6.88 pp · −46.3% cost
+
+Gains are over CUA Driver with the same model, harness, and tasks.
+
+## Abstract
+
+Computer-use agents now run tasks from everyday desktop work to long professional workflows. Most agent interfaces use screenshots with mouse and keyboard input. Because of this design, the model must interpret pixels at every step, while the semantic and programmatic interfaces of the computer stay hidden.
+
+We introduce Hybrid Computer Use (HCU). HCU combines three channels in one interface: code and command-line tools, accessibility (AX), and the GUI. HCU is a two-tool MCP server (AX and GUI) that runs beside the agent's own shell and file tools. It returns compact AX working trees with short refs (`aN → wN → rN`), runs batches of actions with in-call waits, reports post-action AX diffs, and checks live state before it sends any desktop input.
+
+On OSWorld 2.0, OSWorld 1.0 (five frontier models, four harnesses), WeaveBench, MacAgentBench, and Windows Agent Arena, HCU raises task scores and lowers cost.
+
+### What HCU adds
+
+- Two MCP tools, AX and GUI, next to the agent's own shell and file tools.
+- Short refs such as `a1 → w1 → r12` that stay bound to one window.
+- Batches of up to 64 actions with in-call waits and a diff.
+- Guards that check the target and the layout before any input.
+- One Go core with native providers for Linux, macOS, and Windows.
+
+## Computer use belongs inside a general agent
+
+Benchmark agents usually run a separate screenshot loop. Production agents such as Codex and Claude Code already have code tools, caching, and skills. HCU adds the computer to that agent instead of building a new loop.
+
+### Keep the context stable
+
+A screenshot loop sends a 1080p image (about 2.4K tokens) at every step and drops old images. Each drop changes the prompt prefix, so the prompt cache stops working. Inside an append-only agent harness, earlier model turns stay cached.
+
+### Act on semantics, not only pixels
+
+AT-SPI, AXUIElement, and UI Automation describe each window as a tree of controls with roles, values, states, and actions. Products already act through this tree, but OS benchmark baselines mostly used it only to observe.
+
+### Give the agent its own computer
+
+Drivers built for a shared human desktop must act in the background. Background execution rejects many actions and allows only one action per call. A dedicated computer lets the interface favor speed and reliability.
+
+### How agents use accessibility today
+
+Desktop products, web agents, and OS baselines already read the accessibility tree. HCU adds ref-bound actions and batches that report a diff.
+
+| System | Observe through AX | Act through AX | Batches with diff |
+| --- | --- | --- | --- |
+| Desktop products (Codex Computer Use, CUA Driver) | Yes | Yes, in the background | One action per call |
+| Web agents (WebArena, Playwright MCP) | Yes | Yes, by ref | One action per call |
+| OS baselines (OSWorld a11y tree, Set-of-Marks) | Yes | Mapped back to pixels | No |
+| Hybrid Computer Use | Compact working tree | Ref-bound (`rN`, `wN`) | Up to 64 actions with diff |
+
+## Three channels, one desktop
+
+HCU adds two MCP tools, AX and GUI, next to the agent's own code tools. All three channels change the same desktop, so HCU checks live state before every input.
+
+### Programmatic
+
+Code
+
+Edit files, query databases, and run CLI tools directly. This channel is the agent's native shell; HCU does not wrap it.
+
+`bash``python``file edit`
+
+Shared state. Code changes are visible to the next AX or GUI call.
+
+### Semantic
+
+AX
+
+Read a compact control tree, find elements, and run a batch of up to 64 actions on short refs, with in-call waits. Each batch reports a diff.
+
+`apps``observe``find``act`
+
+Target guard. HCU resolves every ref again against the live tree and its window before input.
+
+### Visual
+
+GUI
+
+See the full desktop at 1366 × 768, zoom into small text, and click, drag, scroll, and type in one batch. Use GUI for canvases, images, and controls that AX cannot read.
+
+`screenshot``zoom``actions[]`
+
+Layout guard. Coordinates belong to the last screenshot. If the window under a point moved, closed, or was covered, HCU sends no input and returns a fresh screenshot.
+
+### One AX call, from tree to diff
+
+In a typical AX action call, the model sends one batch. HCU resolves the refs, dispatches the actions, waits, and reports the change in the same round trip.
+
+#### 1. Project the tree
+
+HCU reads the accessibility tree (169 nodes for Chrome settings) and shows the model a 73-line view that keeps every control the model can act on.
+
+```
+window: "Settings - Site settings" [ref=w1]
+ - textbox "Search settings" [ref=r15]
+ - link "Location" [ref=r37]
+ - link "Camera" [ref=r38]
+```
+
+#### 2. Send one batch
+
+The model sends a batch with an in-call wait instead of one action per model turn.
+
+```
+AX(mode="act", actions=[
+  {"type":"click","ref":"r15"},
+  {"type":"type","ref":"r15",
+   "text":"camera"},
+  {"type":"keypress","keys":["ENTER"]},
+  {"type":"wait","settle":true}])
+```
+
+#### 3. Guard and dispatch
+
+Before each step, HCU resolves the ref against the live tree and its window, sends the native action, and waits until the page stops changing.
+
+```
+r15 textbox in w1      ok
+click · type · keypress  sent
+settle: changed, then quiet
+4 / 4 steps in 1 call
+```
+
+#### 4. Return a diff
+
+HCU returns one status line, the effect on each target, and a diff against the tree before the batch.
+
+```
+{"ok":true,"input_emitted":true,
+ "completed":4,"requested":4}
+effect: r15 textbox "Search settings"
+  value=""→"camera"
+ax_diff:
+ - <removed> link "Location"
+ - <changed> link "Camera" [ref=r38]
+ absent_refs: [r37]
+```
+
+### How the layout guard stops a misclick
+
+A schematic case. An AX action changes the window after the screenshot, so a click planned on the old picture would land on another button.
+
+## What the model reads
+
+Real AX captures from 9 applications. Hover a box on the screenshot or a line in the tree. Both point to the same control and the same ref.
+
+Chrome site settings
+
+## Same task, three interfaces, one clock
+
+Screenshot clicks, single AX actions, and HCU make the same changes from the same start.
+
+#### LibreOffice Calc · format cells as red negative currency
+
+- 1. Currency `r19`
+- 2. Decimals = 2 `r27`
+- 3. Thousands separator `r24`
+- 4. Negative in red `r25`
+- 5. OK, wait until closed `r37`
+
+## Higher scores at lower cost, on every platform
+
+Each comparison keeps the model, harness, tasks, and step budget fixed and changes only the computer-use interface.
+
+### OSWorld 2.0
+
+HCU scores 72.37% Partial with GPT-6 Astra and 35.19% Binary with Claude Opus 5, the highest of all full-set systems.
+
+All numbers
+
+| System | Model | Partial | Binary | Cost |
+| --- | --- | --- | --- | --- |
+| HCU (Codex) | GPT-6 Astra | 72.37 | 32.40 | $10.03 |
+| HCU (Claude Code) | Claude Opus 5 | 72.06 | 35.19 | $22.67 |
+| CUA Driver (Codex) | GPT-6 Astra | 68.82 | 31.50 | $10.05 |
+| Official GUI loop | Claude Opus 5 | 68.31 | 31.43 | $28.43 |
+| Official GUI loop | Muse Spark 1.3 | 66.90 | 32.00 | n/a |
+| Official GUI loop | GPT-5.6 Sol | 62.72 | 27.34 | $13.94 |
+| StateAct (0624) | Claude Opus 4.8 | 61.60 | 26.90 | ~$7.80 |
+| Computer-use loop | GPT-6 Astra * | 72.60 | – | – |
+
+On GPT-6 Astra in Codex, HCU adds 3.55 Partial points over CUA Driver and cuts tool calls by 29.8% and task time by 21%. With Claude Opus 5, HCU costs 20.3% less than the official GUI loop. * OpenAI's offline-subset result, unranked.
+
+### OSWorld 1.0
+
+The HCU 1.0 release scores 70.13%, 7.66 points above CUA Driver, at 59.1% lower cost.
+
+All numbers
+
+| Per task | CUA Driver | HCU, paper | HCU 1.0 | Change |
+| --- | --- | --- | --- | --- |
+| Score (%) | 62.47 | 65.77 | 70.13 | +7.66 pp |
+| Full-score tasks (%) | 60.00 | 62.41 | 66.67 | +6.67 pp |
+| Steps | 40.58 | 28.45 | 24.92 | −38.6% |
+| Tool calls | 33.67 | 24.94 | 21.63 | −35.8% |
+| Execution time (s) | 499 | 350 | 296 | −40.7% |
+| Input tokens (K) | 2,174.5 | 927.1 | 717.7 | −67.0% |
+| Cost ($) | 0.983 | 0.504 | 0.402 | −59.1% |
+
+CUA Driver and the paper version are three-run means.
+
+### Windows Agent Arena
+
+Through UI Automation and Win32, HCU scores 80.86%, 8.97 points above CUA Driver, and halves the total cost.
+
+All numbers
+
+| Per task | CUA Driver | HCU | Change |
+| --- | --- | --- | --- |
+| Score (%) | 71.89 | 80.86 | +8.97 pp |
+| Tasks fully solved | 78 | 88 | +10 |
+| Steps | 24.45 | 17.35 | −29.0% |
+| Tool calls | 23.81 | 16.43 | −31.0% |
+| Mean time (s) | 344.3 | 220.3 | −36.0% |
+| Input tokens, all tasks | 155.6M | 50.0M | −67.9% |
+| Cost per task ($) | 0.664 | 0.325 | −51.0% |
+| Total cost ($) | 73.00 | 36.06 | −50.6% |
+
+### MacAgentBench · UI subset
+
+Through AXUIElement and ScreenCaptureKit, HCU completes 25 tasks (CUA Driver: 24) in 37.8% less time at 51.4% lower cost.
+
+All numbers
+
+| Per task | CUA Driver | HCU | Change |
+| --- | --- | --- | --- |
+| Completed tasks | 24 / 28 | 25 / 28 | +3.6 pp |
+| Steps | 52.21 | 39.61 | −24.1% |
+| Tool calls | 44.54 | 35.64 | −20.0% |
+| Mean time (s) | 876.0 | 544.5 | −37.8% |
+| Median time (s) | 659.5 | 419.3 | −36.4% |
+| Input tokens | 3.64M | 1.34M | −63.0% |
+| Cost ($) | 1.490 | 0.725 | −51.4% |
+
+### WeaveBench
+
+HCU scores 53.25%, 6.88 points above CUA Driver and 9.41 above OpenClaw, the benchmark's official agent.
+
+All numbers
+
+| Per task | OpenClaw | CUA Driver | HCU |
+| --- | --- | --- | --- |
+| Mean score (%) | 43.84 | 46.37 | 53.25 |
+| Tasks scoring ≥ 0.8 | 23 / 114 | 12 / 114 | 24 / 114 |
+| Tool calls | 82.96 | 100.82 | 83.03 |
+| Input tokens | 3.54M | 8.71M | 4.48M |
+| Mean time (min) | 21.19 | 40.76 | 32.59 |
+| Cost ($) | 3.672 | 3.518 | 1.889 |
+
+### Same model, same harness, different interface
+
+Replacing CUA Driver with HCU raises the mean score by 6.48 points, with 22% fewer tool calls and 30% lower cost on average.
+
+## Where the gains come from
+
+Every model scores higher with HCU, and each divides work across the channels differently. Nearly all of the gain comes from tasks where HCU makes at least one AX or GUI request.
+
+#### How each model uses HCU
+
+Share of desktop requests, OSWorld 1.0
+
+AX observe AX act GUI screenshot GUI act
+
+GPT-5.4 sends 80% of desktop requests to AX. Claude Opus 5.5 sends 94% to GUI, and 58% of its acting requests contain two or more actions. On 29% to 31% of the tasks where GPT-5.4, Gemini 3.8 Flash, or Grok 4.7 used GUI, every GUI request was a screenshot and every action went through AX.
+
+#### Where the score gain comes from
+
+Gain from tasks that used AX or GUI
+
+Shell-only tasks change by less than one point in either direction.
+
+#### Tasks that use desktop tools
+
+CUA Driver HCU
+
+With HCU, every model uses AX or GUI in more tasks.
+
+## One Go core, three native providers
+
+`computer-use` implements the contract once in Go. Each OS gets its own provider process for accessibility, capture, and input. Agents, scripts, and Python code get the same results from the same core.
+
+Callers
+
+Coding agents Codex, Claude Code, Gemini CLI, Grok Build
+
+Shell scripts Any program that runs a command
+
+Python code Loops over live state
+
+Entry points
+
+MCP server stdio, in process
+
+CLI Shorthands and `gui`
+
+Python SDK Sync, async, PTC
+
+A per-desktop daemon gives the CLI and SDK shared refs and one input lock. MCP joins with `--attach`.
+
+CoreOne Go binary
+
+Contract Schemas, typed errors
+
+State Refs and GUI frame
+
+Guards Target and layout checks
+
+AX engine Batches, waits, effects
+
+GUI engine Capture, zoom, input
+
+ProvidersOne per OS build
+
+Linux AT-SPI2, X11, XTest · Python
+
+macOS AXUIElement, CoreGraphics, ScreenCaptureKit · Swift
+
+Windows UIA3, Win32 · C#
+
+Desktop
+
+Apps and windows on the agent's own computer
+
+### Follow one call
+
+Click Save in the Save As dialog, then wait until the dialog closes.
+
+- Entry · MCP server · The agent calls the tool over stdio.
+
+```
+AX({"mode": "act", "actions": [
+  {"type": "click", "ref": "r13"},
+  {"type": "wait", "window": "Save As", "gone": true}]})
+```
+
+- Inside HCU · Core · Check the call · HCU validates the whole batch before any input.
+
+```
+mode act · 2 steps · window w2 from r13 · schema ok
+```
+
+- Core · Guard the target · r13 is still the Save button in the Save As dialog.
+
+```
+r13 button "Save" in w2 "Save As"   ok
+```
+
+- Provider · Run the native input · Same core, one native API per OS.
+
+```
+Linux    Atspi.Action.do_action(i)
+macOS    AXUIElementPerformAction(kAXPressAction)
+Windows  InvokePattern.Invoke()
+```
+
+- Result · Effects and windows · Each target's change, without a new screenshot.
+
+```
+{"ok":true,"input_emitted":true,
+ "completed":2,"requested":2}
+effect: r13 button "Save" gone
+windows: closed w2 "Save As"; focus w1
+```
+
+### One computer, several displays
+
+A general agent can start subagents on one host. Each subagent gets its own virtual display and HCU instance. The subagents share results through the file system.
+
+The screenshots come from a recorded product-launch review in which four subagents work at the same time on one Linux host.
+
+Marketing deckImpress
+
+Revenue modelCalc
+
+Go / no-go memoWriter
+
+Launch micrositeChrome
+
+## From single actions to code execution
+
+GUI and AX control both moved from one action per model turn to batches. The next step joins the two lines in one program.
+
+#### GUI · Stage 1 · Single action
+
+One click per model turn. A new screenshot goes back to the model after each click.
+
+```
+click(812, 455)
+# new screenshot
+```
+
+Screenshot agents
+
+#### GUI · Stage 2 · Batched actions
+
+Pointer and key actions in one call, one screenshot at the end.
+
+```
+GUI(actions=[
+  click, type, keypress])
+# one screenshot at the end
+```
+
+OpenAI and Anthropic computer tools, HCU GUI tool
+
+#### GUI · Stage 3 · Code execution
+
+GUI, AX, and ordinary code in one program. AX state becomes variables to loop and branch on. Screenshots from pyautogui stay in the program; only the result returns to the model.
+
+```
+import pyautogui as gui
+from pytesseract import image_to_string as ocr
+
+def receipt_total(row):         # reused per row
+    # GUI: the pixels stay in the program
+    gui.doubleClick(row.thumb.center)
+    img = gui.screenshot(region=ax.bounds("w2"))
+    gui.press("esc")
+    return money(ocr(img))
+
+for row in ax.rows("w1", status="Pending"):
+    claimed = money(row.text)   # AX: text
+    match = receipt_total(row) == claimed
+    name = "Approve" if match else "Flag"
+    ax.click(row.button(name))  # AX: by ref
+
+assert not ax.rows("w1", status="Pending")
+print(ax.diff("w1"))  # 11 approved, 3 flagged
+```
+
+OpenAI recommends it for GPT-6 Astra; next for the HCU Python SDK
+
+#### AX · Stage 1 · Single action
+
+One AX action per call, then the agent reads the window again.
+
+```
+press("#12")
+# read the window again
+```
+
+CUA Driver, Codex Computer Use
+
+#### AX · Stage 2 · Batched actions
+
+Short refs, ordered batches with waits, and a diff instead of a new tree.
+
+```
+AX(mode="act", actions=[
+  {"type":"click","ref":"r19"},
+  {"type":"wait","window":"Save",
+   "gone":true}])
+# only a diff comes back
+```
+
+HCU AX tool
+
+#### Cost
+
+One expense review. Time counts only model waiting, at about 7 s per turn.
+
+~50 model turns
+
+~50 full screenshots · ~6 min
+
+~16 model turns
+
+14 receipt crops · ~2 min
+
+1 model turn
+
+0 images, one printed line · ~7 s
+
+## BibTeX
+
+```
+@article{wang2026hcu,
+  title  = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
+  author = {Wang, Haoqing and Zhang, Xiaoyi and Fan, Sicheng and Zhang, Zhexin and Zhang, Xinjie and Li, Jiahao and Li, Bin and Lu, Yan},
+  year   = {2026},
+  note   = {Preprint}
+}
+```

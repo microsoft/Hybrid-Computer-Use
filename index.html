@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents</title>
+  <meta name="description" content="Hybrid Computer Use (HCU) is an open-source MCP server that lets AI agents such as Codex and Claude Code operate Linux, macOS, and Windows through code, accessibility (AX), and GUI. 72.37% on OSWorld 2.0, 70.13% on OSWorld 1.0 at 59% lower cost, and 80.86% on Windows Agent Arena at 51% lower cost." />
+  <meta name="keywords" content="Hybrid Computer Use, HCU, computer use, computer-use agent, CUA, GUI agent, desktop agent, OS agent, AI agent, LLM agent, multimodal agent, agent-computer interface, accessibility tree, AX, AT-SPI, UI Automation, AXUIElement, GUI automation, desktop automation, MCP, Model Context Protocol, MCP server, Codex, Claude Code, Gemini CLI, Grok Build, code execution, programmatic tool calling, OSWorld, OSWorld 2.0, Windows Agent Arena, MacAgentBench, WeaveBench, CUA Driver, Microsoft Research" />
+  <meta name="author" content="Haoqing Wang, Xiaoyi Zhang, Sicheng Fan, Zhexin Zhang, Xinjie Zhang, Jiahao Li, Bin Li, Yan Lu" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="favicon.ico?v=6ae34006" sizes="48x48" />
+  <link rel="icon" href="static/imgs/favicon.svg?v=6ae34005" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="static/imgs/apple-touch-icon.png?v=6ae34006" />
+  <link rel="canonical" href="https://microsoft.github.io/Hybrid-Computer-Use/" />
+  <link rel="alternate" hreflang="en" href="https://microsoft.github.io/Hybrid-Computer-Use/" />
+  <link rel="alternate" hreflang="zh-CN" href="https://microsoft.github.io/Hybrid-Computer-Use/zh.html" />
+  <link rel="alternate" hreflang="x-default" href="https://microsoft.github.io/Hybrid-Computer-Use/" />
+  <link rel="alternate" type="text/plain" href="llms.txt" title="llms.txt" />
+  <link rel="alternate" type="text/plain" href="llms-full.txt" title="llms-full.txt" />
+  <meta name="citation_title" content="Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents" />
+  <meta name="citation_author" content="Haoqing Wang" />
+  <meta name="citation_author_institution" content="Microsoft Research" />
+  <meta name="citation_author" content="Xiaoyi Zhang" />
+  <meta name="citation_author_institution" content="Microsoft Research" />
+  <meta name="citation_author" content="Sicheng Fan" />
+  <meta name="citation_author_institution" content="Fudan University" />
+  <meta name="citation_author" content="Zhexin Zhang" />
+  <meta name="citation_author_institution" content="Tsinghua University" />
+  <meta name="citation_author" content="Xinjie Zhang" />
+  <meta name="citation_author_institution" content="Microsoft Research" />
+  <meta name="citation_author" content="Jiahao Li" />
+  <meta name="citation_author_institution" content="Microsoft Research" />
+  <meta name="citation_author" content="Bin Li" />
+  <meta name="citation_author_institution" content="Microsoft Research" />
+  <meta name="citation_author" content="Yan Lu" />
+  <meta name="citation_author_institution" content="Microsoft Research" />
+  <meta name="citation_publication_date" content="2026" />
+  <meta name="citation_pdf_url" content="https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf" />
+  <meta name="citation_keywords" content="computer-use agents; GUI agents; accessibility; MCP; OSWorld" />
+  <meta property="og:site_name" content="Hybrid Computer Use" />
+  <meta property="og:title" content="Hybrid Computer Use (HCU)" />
+  <meta property="og:description" content="One MCP server for code, accessibility (AX), and GUI control of Linux, macOS, and Windows desktops." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://microsoft.github.io/Hybrid-Computer-Use/" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="zh_CN" />
+  <meta property="og:image" content="https://microsoft.github.io/Hybrid-Computer-Use/static/imgs/social-preview.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content="An agent operates a computer through three channels: semantic AX, visual GUI, and programmatic code or CLI." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Hybrid Computer Use (HCU)" />
+  <meta name="twitter:description" content="One MCP server for code, accessibility (AX), and GUI control of Linux, macOS, and Windows desktops." />
+  <meta name="twitter:image" content="https://microsoft.github.io/Hybrid-Computer-Use/static/imgs/social-preview.png" />
+  <link rel="stylesheet" href="static/css/site.css?v=6ae344fa" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ScholarlyArticle",
+        "@id": "#paper",
+        "headline": "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents",
+        "name": "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents",
+        "alternateName": "HCU",
+        "abstract": "Computer-use agents now run tasks from everyday desktop work to long professional workflows. Most agent interfaces use screenshots with mouse and keyboard input, so the model must interpret pixels at every step while the semantic and programmatic interfaces of the computer stay hidden. We introduce Hybrid Computer Use (HCU), which combines code and command-line tools, accessibility (AX), and the GUI in one interface. HCU is a two-tool MCP server (AX and GUI) that runs beside the agent's own shell and file tools. It returns compact AX working trees with short refs, runs batches of actions with in-call waits, reports post-action AX diffs, and checks live state before it sends any desktop input. On OSWorld 2.0, OSWorld 1.0 (five frontier models, four harnesses), WeaveBench, MacAgentBench, and Windows Agent Arena, HCU raises task scores and lowers cost.",
+        "author": [
+          {
+            "@type": "Person",
+            "name": "Haoqing Wang",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            },
+            "sameAs": "https://github.com/hqhq1025"
+          },
+          {
+            "@type": "Person",
+            "name": "Xiaoyi Zhang",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Sicheng Fan",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Fudan University"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Zhexin Zhang",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Tsinghua University"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Xinjie Zhang",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Jiahao Li",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Bin Li",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Yan Lu",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          }
+        ],
+        "datePublished": "2026",
+        "inLanguage": "en",
+        "keywords": [
+          "Hybrid Computer Use",
+          "HCU",
+          "computer use",
+          "computer-use agent",
+          "CUA",
+          "GUI agent",
+          "desktop agent",
+          "OS agent",
+          "AI agent",
+          "LLM agent",
+          "multimodal agent",
+          "agent-computer interface",
+          "accessibility tree",
+          "AX",
+          "AT-SPI",
+          "UI Automation",
+          "AXUIElement",
+          "GUI automation",
+          "desktop automation",
+          "MCP",
+          "Model Context Protocol",
+          "MCP server",
+          "Codex",
+          "Claude Code",
+          "Gemini CLI",
+          "Grok Build",
+          "code execution",
+          "programmatic tool calling",
+          "OSWorld",
+          "OSWorld 2.0",
+          "Windows Agent Arena",
+          "MacAgentBench",
+          "WeaveBench",
+          "CUA Driver",
+          "Microsoft Research"
+        ],
+        "about": [
+          {
+            "@type": "Thing",
+            "name": "Computer-use agents"
+          },
+          {
+            "@type": "Thing",
+            "name": "GUI agents"
+          },
+          {
+            "@type": "Thing",
+            "name": "Accessibility APIs"
+          },
+          {
+            "@type": "Thing",
+            "name": "Model Context Protocol"
+          },
+          {
+            "@type": "Thing",
+            "name": "Desktop automation"
+          }
+        ],
+        "mentions": [
+          {
+            "@type": "CreativeWork",
+            "name": "OSWorld"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "Windows Agent Arena"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "MacAgentBench"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "WeaveBench"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "CUA Driver"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "Codex"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "Claude Code"
+          }
+        ],
+        "encoding": {
+          "@type": "MediaObject",
+          "encodingFormat": "application/pdf",
+          "contentUrl": "https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf"
+        },
+        "image": "https://microsoft.github.io/Hybrid-Computer-Use/static/imgs/social-preview.png",
+        "isBasedOn": {
+          "@id": "#software"
+        },
+        "description": "HCU scores 72.37% Partial on OSWorld 2.0 (GPT-6 Astra) and 35.19% Binary with Claude Opus 5; 70.13% on OSWorld 1.0 with 59.1% lower cost than CUA Driver; 80.86% on Windows Agent Arena with 50.6% lower cost; 25 of 28 MacAgentBench UI tasks with 51.4% lower cost; and 53.25% on WeaveBench with 46.3% lower cost."
+      },
+      {
+        "@type": "SoftwareSourceCode",
+        "@id": "#software",
+        "name": "Hybrid Computer Use (computer-use MCP server)",
+        "alternateName": [
+          "HCU",
+          "computer-use"
+        ],
+        "description": "One MCP server for code, accessibility (AX), and GUI control of Linux, macOS, and Windows desktops.",
+        "codeRepository": "https://github.com/microsoft/Hybrid-Computer-Use",
+        "url": "https://github.com/microsoft/Hybrid-Computer-Use",
+        "license": "https://opensource.org/licenses/MIT",
+        "programmingLanguage": [
+          "Go",
+          "Python",
+          "Swift",
+          "C#"
+        ],
+        "runtimePlatform": [
+          "Linux",
+          "macOS",
+          "Windows"
+        ],
+        "softwareVersion": "1.0.0",
+        "author": {
+          "@type": "Person",
+          "name": "Haoqing Wang",
+          "affiliation": {
+            "@type": "Organization",
+            "name": "Microsoft Research"
+          },
+          "sameAs": "https://github.com/hqhq1025"
+        },
+        "creator": {
+          "@type": "Organization",
+          "name": "Microsoft Research"
+        },
+        "keywords": [
+          "MCP server",
+          "computer use",
+          "accessibility",
+          "GUI automation",
+          "AI agents"
+        ]
+      },
+      {
+        "@type": "WebPage",
+        "@id": "#page",
+        "name": "Hybrid Computer Use (HCU)",
+        "description": "Hybrid Computer Use (HCU) is an open-source MCP server that lets AI agents such as Codex and Claude Code operate Linux, macOS, and Windows through code, accessibility (AX), and GUI. 72.37% on OSWorld 2.0, 70.13% on OSWorld 1.0 at 59% lower cost, and 80.86% on Windows Agent Arena at 51% lower cost.",
+        "inLanguage": "en",
+        "mainEntity": {
+          "@id": "#paper"
+        },
+        "primaryImageOfPage": "https://microsoft.github.io/Hybrid-Computer-Use/static/imgs/social-preview.png"
+      }
+    ]
+  }
+  </script>
+  <script defer src="static/js/site.js?v=6ae344fa"></script>
+  <script defer src="static/js/charts.js?v=6ae3452a"></script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-paper" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.76-2-2-2H4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 0-1 1v3c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.76-2-2-2h-4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></symbol>
+    <symbol id="i-pointer" viewBox="0 0 24 24"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14"/><path d="M16 5v14"/></symbol>
+    <symbol id="i-restart" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-cache" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-linux" viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.4v.019c.002.089.008.179.02.267-.193-.067-.438-.135-.607-.202a1.635 1.635 0 01-.018-.2v-.02a1.772 1.772 0 01.15-.768c.082-.22.232-.406.43-.533a.985.985 0 01.594-.2zm-2.962.059h.036c.142 0 .27.048.399.135.146.129.264.288.344.465.09.199.14.4.153.667v.004c.007.134.006.2-.002.266v.08c-.03.007-.056.018-.083.024-.152.055-.274.135-.393.2.012-.09.013-.18.003-.267v-.015c-.012-.133-.04-.2-.082-.333a.613.613 0 00-.166-.267.248.248 0 00-.183-.064h-.021c-.071.006-.13.04-.186.132a.552.552 0 00-.12.27.944.944 0 00-.023.33v.015c.012.135.037.2.08.334.046.134.098.2.166.268.01.009.02.018.034.024-.07.057-.117.07-.176.136a.304.304 0 01-.131.068 2.62 2.62 0 01-.275-.402 1.772 1.772 0 01-.155-.667 1.759 1.759 0 01.08-.668 1.43 1.43 0 01.283-.535c.128-.133.26-.2.418-.2zm1.37 1.706c.332 0 .733.065 1.216.399.293.2.523.269 1.052.468h.003c.255.136.405.266.478.399v-.131a.571.571 0 01.016.47c-.123.31-.516.643-1.063.842v.002c-.268.135-.501.333-.775.465-.276.135-.588.292-1.012.267a1.139 1.139 0 01-.448-.067 3.566 3.566 0 01-.322-.198c-.195-.135-.363-.332-.612-.465v-.005h-.005c-.4-.246-.616-.512-.686-.71-.07-.268-.005-.47.193-.6.224-.135.38-.271.483-.336.104-.074.143-.102.176-.131h.002v-.003c.169-.202.436-.47.839-.601.139-.036.294-.065.466-.065zm2.8 2.142c.358 1.417 1.196 3.475 1.735 4.473.286.534.855 1.659 1.102 3.024.156-.005.33.018.513.064.646-1.671-.546-3.467-1.089-3.966-.22-.2-.232-.335-.123-.335.59.534 1.365 1.572 1.646 2.757.13.535.16 1.104.021 1.67.067.028.135.06.205.067 1.032.534 1.413.938 1.23 1.537v-.043c-.06-.003-.12 0-.18 0h-.016c.151-.467-.182-.825-1.065-1.224-.915-.4-1.646-.336-1.77.465-.008.043-.013.066-.018.135-.068.023-.139.053-.209.064-.43.268-.662.669-.793 1.187-.13.533-.17 1.156-.205 1.869v.003c-.02.334-.17.838-.319 1.35-1.5 1.072-3.58 1.538-5.348.334a2.645 2.645 0 00-.402-.533 1.45 1.45 0 00-.275-.333c.182 0 .338-.03.465-.067a.615.615 0 00.314-.334c.108-.267 0-.697-.345-1.163-.345-.467-.931-.995-1.788-1.521-.63-.4-.986-.87-1.15-1.396-.165-.534-.143-1.085-.015-1.645.245-1.07.873-2.11 1.274-2.763.107-.065.037.135-.408.974-.396.751-1.14 2.497-.122 3.854a8.123 8.123 0 01.647-2.876c.564-1.278 1.743-3.504 1.836-5.268.048.036.217.135.289.202.218.133.38.333.59.465.21.201.477.335.876.335.039.003.075.006.11.006.412 0 .73-.134.997-.268.29-.134.52-.334.74-.4h.005c.467-.135.835-.402 1.044-.7zm2.185 8.958c.037.6.343 1.245.882 1.377.588.134 1.434-.333 1.791-.765l.211-.01c.315-.007.577.01.847.268l.003.003c.208.199.305.53.391.876.085.4.154.78.409 1.066.486.527.645.906.636 1.14l.003-.007v.018l-.003-.012c-.015.262-.185.396-.498.595-.63.401-1.746.712-2.457 1.57-.618.737-1.37 1.14-2.036 1.191-.664.053-1.237-.2-1.574-.898l-.005-.003c-.21-.4-.12-1.025.056-1.69.176-.668.428-1.344.463-1.897.037-.714.076-1.335.195-1.814.12-.465.308-.797.641-.984l.045-.022zm-10.814.049h.01c.053 0 .105.005.157.014.376.055.706.333 1.023.752l.91 1.664.003.003c.243.533.754 1.064 1.189 1.637.434.598.77 1.131.729 1.57v.006c-.057.744-.48 1.148-1.125 1.294-.645.135-1.52.002-2.395-.464-.968-.536-2.118-.469-2.857-.602-.369-.066-.61-.2-.723-.4-.11-.2-.113-.602.123-1.23v-.004l.002-.003c.117-.334.03-.752-.027-1.118-.055-.401-.083-.71.043-.94.16-.334.396-.4.69-.533.294-.135.64-.202.915-.47h.002v-.002c.256-.268.445-.601.668-.838.19-.201.38-.336.663-.336zm7.159-9.074c-.435.201-.945.535-1.488.535-.542 0-.97-.267-1.28-.466-.154-.134-.28-.268-.373-.335-.164-.134-.144-.333-.074-.333.109.016.129.134.199.2.096.066.215.2.36.333.292.2.68.467 1.167.467.485 0 1.053-.267 1.398-.466.195-.135.445-.334.648-.467.156-.136.149-.267.279-.267.128.016.034.134-.147.332a8.097 8.097 0 01-.69.468zm-1.082-1.583V5.64c-.006-.02.013-.042.029-.05.074-.043.18-.027.26.004.063 0 .16.067.15.135-.006.049-.085.066-.135.066-.055 0-.092-.043-.141-.068-.052-.018-.146-.008-.163-.065zm-.551 0c-.02.058-.113.049-.166.066-.047.025-.086.068-.14.068-.05 0-.13-.02-.136-.068-.01-.066.088-.133.15-.133.08-.031.184-.047.259-.005.019.009.036.03.03.05v.02h.003z"/></symbol>
+    <symbol id="i-apple" viewBox="0 0 24 24"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></symbol>
+    <symbol id="i-windows" viewBox="0 0 24 24"><path d="M0,0H11.377V11.372H0ZM12.623,0H24V11.372H12.623ZM0,12.623H11.377V24H0Zm12.623,0H24V24H12.623"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#abstract">Skip to content</a>
+
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top" aria-label="Hybrid Computer Use, back to top">
+        <span class="ms-logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        Hybrid Computer Use
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#motivation">Motivation</a>
+        <a href="#method">Method</a>
+        <a href="#atlas">AX view</a>
+        <a href="#batching">Batching</a>
+        <a href="#results">Results</a>
+        <a href="#analysis">Analysis</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#outlook">Outlook</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-subtle lang-switch" href="zh.html" hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a class="btn" href="assets/Hybrid-Computer-Use.pdf" target="_blank" rel="noopener"><svg><use href="#i-paper"/></svg><span>Paper</span></a>
+        <a class="btn btn-primary" href="https://github.com/microsoft/Hybrid-Computer-Use" target="_blank" rel="noopener"><svg><use href="#i-github"/></svg><span>Code</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <h1>Hybrid Computer Use</h1>
+        <p class="hero-sub">A Unified Programmatic, Semantic, and Visual Interface for General Agents</p>
+        <div>
+          <p class="authors">
+            <span>Haoqing Wang<sup>1*</sup></span><span>Xiaoyi Zhang<sup>1†</sup></span><span>Sicheng Fan<sup>2</sup></span><span>Zhexin Zhang<sup>3</sup></span><span>Xinjie Zhang<sup>1</sup></span><span>Jiahao Li<sup>1</sup></span><span>Bin Li<sup>1</sup></span><span>Yan Lu<sup>1</sup></span>
+          </p>
+          <p class="affiliations"><span><sup>1</sup>Microsoft Research</span><span><sup>2</sup>Fudan University</span><span><sup>3</sup>Tsinghua University</span></p>
+          <p class="author-note">* Work done during an internship at Microsoft Research. † Project lead.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href="assets/Hybrid-Computer-Use.pdf" target="_blank" rel="noopener"><svg><use href="#i-paper"/></svg>Paper</a>
+          <a class="btn btn-lg" href="https://github.com/microsoft/Hybrid-Computer-Use" target="_blank" rel="noopener"><svg><use href="#i-github"/></svg>Code</a>
+          <a class="btn btn-lg" href="#citation"><svg><use href="#i-quote"/></svg>BibTeX</a>
+        </div>
+        <figure class="hero-fig">
+          <div class="hero-fig-art"><div class="fig1"><img src="static/imgs/hcu-channels.svg?v=6ae34393" data-motion-base="static/imgs/hcu-channels-base.svg?v=6ae34393" width="1789" height="759" alt="An agent reaches the computer through three channels: semantic AX, visual GUI, and programmatic code or CLI." /></div></div>
+          <div class="hero-fig-chart" id="hero-chart"></div>
+        </figure>
+
+        <div class="scoreboard">
+          <a class="score" href="#results" data-result-tab="osw2">
+            <span class="score-os"><svg class="os-icon" aria-hidden="true"><use href="#i-linux"/></svg>Linux · 108 tasks</span>
+            <span class="score-value">72.37<small>%</small></span>
+            <span class="score-name">OSWorld 2.0</span>
+            <span class="score-delta">Highest full-set Partial</span>
+          </a>
+          <a class="score" href="#results" data-result-tab="osw1">
+            <span class="score-os"><svg class="os-icon" aria-hidden="true"><use href="#i-linux"/></svg>Linux · 360 tasks</span>
+            <span class="score-value">70.13<small>%</small></span>
+            <span class="score-name">OSWorld 1.0</span>
+            <span class="score-delta">+7.66 pp · −59.1% cost</span>
+          </a>
+          <a class="score" href="#results" data-result-tab="waa">
+            <span class="score-os"><svg class="os-icon" aria-hidden="true"><use href="#i-windows"/></svg>Windows · 111 tasks</span>
+            <span class="score-value">80.86<small>%</small></span>
+            <span class="score-name">Windows Agent Arena</span>
+            <span class="score-delta">+8.97 pp · −50.6% cost</span>
+          </a>
+          <a class="score" href="#results" data-result-tab="mac">
+            <span class="score-os"><svg class="os-icon" aria-hidden="true"><use href="#i-apple"/></svg>macOS · 28 UI tasks</span>
+            <span class="score-value">89.3<small>%</small></span>
+            <span class="score-name">MacAgentBench</span>
+            <span class="score-delta">+3.6 pp · −51.4% cost</span>
+          </a>
+          <a class="score" href="#results" data-result-tab="weave">
+            <span class="score-os"><svg class="os-icon" aria-hidden="true"><use href="#i-linux"/></svg>Linux · 114 tasks</span>
+            <span class="score-value">53.25<small>%</small></span>
+            <span class="score-name">WeaveBench</span>
+            <span class="score-delta">+6.88 pp · −46.3% cost</span>
+          </a>
+        </div>
+        <p class="scoreboard-note">Gains are over CUA Driver with the same model, harness, and tasks.</p>
+      </div>
+    </section>
+
+    <!-- Abstract -->
+    <section class="section section-alt" id="abstract">
+      <div class="container">
+        <div class="abstract-layout">
+          <div class="abstract">
+            <h2>Abstract</h2>
+            <p>Computer-use agents now run tasks from everyday desktop work to long professional workflows. Most agent interfaces use screenshots with mouse and keyboard input. Because of this design, the model must interpret pixels at every step, while the semantic and programmatic interfaces of the computer stay hidden.</p>
+            <p>We introduce <strong>Hybrid Computer Use (HCU)</strong>. HCU combines three channels in one interface: <span class="chw chw-code">code and command-line tools</span>, <span class="chw chw-ax">accessibility (AX)</span>, and the <span class="chw chw-gui">GUI</span>. HCU is a two-tool MCP server (AX and GUI) that runs beside the agent's own shell and file tools. It returns compact AX working trees with short refs (<code>aN → wN → rN</code>), runs batches of actions with in-call waits, reports post-action AX diffs, and checks live state before it sends any desktop input.</p>
+            <p>On OSWorld 2.0, OSWorld 1.0 (five frontier models, four harnesses), WeaveBench, MacAgentBench, and Windows Agent Arena, HCU raises task scores and lowers cost.</p>
+          </div>
+          <aside class="adds">
+            <h3>What HCU adds</h3>
+            <ul>
+              <li><span class="add-vis" aria-hidden="true"><span class="tk tk-ax">AX</span><span class="tk tk-gui">GUI</span></span><span class="add-txt"><strong>Two MCP tools</strong>, AX and GUI, next to the agent's own shell and file tools.</span></li>
+              <li><span class="add-vis add-refs" aria-hidden="true"><b>a1</b>›<b>w1</b>›<b>r12</b></span><span class="add-txt"><strong>Short refs</strong> such as <code>a1 → w1 → r12</code> that stay bound to one window.</span></li>
+              <li><span class="add-vis" aria-hidden="true"><span class="add-batch"><i></i><i></i><i></i><i></i><i></i><i></i></span></span><span class="add-txt"><strong>Batches</strong> of up to 64 actions with in-call waits and a diff.</span></li>
+              <li><span class="add-vis add-guard" aria-hidden="true"><b>r13</b><em>✓</em><b>x,y</b><em>✓</em></span><span class="add-txt"><strong>Guards</strong> that check the target and the layout before any input.</span></li>
+              <li><span class="add-vis add-os" aria-hidden="true"><svg class="os-icon"><use href="#i-linux"/></svg><svg class="os-icon"><use href="#i-apple"/></svg><svg class="os-icon"><use href="#i-windows"/></svg></span><span class="add-txt"><strong>One Go core</strong> with native providers for Linux, macOS, and Windows.</span></li>
+            </ul>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- Motivation -->
+    <section class="section" id="motivation">
+      <div class="container">
+        <div class="section-head">
+          <h2>Computer use belongs inside a general agent</h2>
+          <p>Benchmark agents usually run a separate screenshot loop. Production agents such as Codex and Claude Code already have code tools, caching, and skills. HCU adds the computer to that agent instead of building a new loop.</p>
+        </div>
+
+        <div class="grid-3">
+          <article class="card why-card">
+            <div class="why-vis" aria-hidden="true">
+              <div class="pr-row"><span class="pr-lab">Screenshot loop</span><span class="pr-blocks"><i data-at="1"></i><i class="img gone" data-at="2" data-off="4"></i><i data-at="3"></i><i class="img gone" data-at="4" data-off="6"></i><i data-at="5"></i><i class="img" data-at="6"></i></span><span class="pr-note is-miss" data-at="4" data-hit="6">cache miss</span></div>
+              <div class="pr-row"><span class="pr-lab">Agent harness</span><span class="pr-blocks is-cached"><i data-at="1" data-hit="2"></i><i data-at="2" data-hit="3"></i><i data-at="3" data-hit="4"></i><i data-at="4" data-hit="5"></i><i data-at="5" data-hit="6"></i><i class="new" data-at="6"></i></span><span class="pr-note is-hit" data-at="2">cached</span></div>
+            </div>
+            <h3>Keep the context stable</h3>
+            <p>A screenshot loop sends a 1080p image (about 2.4K tokens) at every step and drops old images. Each drop changes the prompt prefix, so the prompt cache stops working. Inside an append-only agent harness, earlier model turns stay cached.</p>
+          </article>
+          <article class="card why-card">
+            <div class="why-vis why-tree" aria-hidden="true"><span data-at="1" data-off="7"><em>window</em> "Save As"</span><span class="d1" data-at="2" data-hit="4" data-off="7"><em>textbox</em> "File name" <b>r11</b></span><span class="d1" data-at="3" data-hit="5" data-off="7"><em>button</em> "Save" <b>r13</b></span></div>
+            <h3>Act on semantics, not only pixels</h3>
+            <p>AT-SPI, AXUIElement, and UI Automation describe each window as a tree of controls with roles, values, states, and actions. Products already act through this tree, but OS benchmark baselines mostly used it only to observe.</p>
+          </article>
+          <article class="card why-card">
+            <div class="why-vis" aria-hidden="true">
+              <div class="pr-row"><span class="pr-lab">Shared desktop</span><span class="calls"><b data-at="1"><i></i></b><b data-at="2"><i class="no" data-hit="3"></i></b><b data-at="3"><i></i></b><b data-at="4"><i></i></b></span><span class="pr-note" data-at="4">4 calls</span></div>
+              <div class="pr-row"><span class="pr-lab">Own computer</span><span class="calls"><b class="wide" data-at="1" data-hit="2"><i></i><i></i><i></i><i></i><i></i><i></i></b></span><span class="pr-note is-hit" data-at="2">1 call</span></div>
+            </div>
+            <h3>Give the agent its own computer</h3>
+            <p>Drivers built for a shared human desktop must act in the background. Background execution rejects many actions and allows only one action per call. A dedicated computer lets the interface favor speed and reliability.</p>
+          </article>
+        </div>
+
+        <div class="subhead">
+          <h3>How agents use accessibility today</h3>
+          <p>Desktop products, web agents, and OS baselines already read the accessibility tree. HCU adds ref-bound actions and batches that report a diff.</p>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="table table-text">
+              <thead>
+                <tr><th>System</th><th>Observe through AX</th><th>Act through AX</th><th>Batches with diff</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Desktop products (Codex Computer Use, CUA Driver)</td><td class="check">Yes</td><td class="check">Yes, in the background</td><td class="cross">One action per call</td></tr>
+                <tr><td>Web agents (WebArena, Playwright MCP)</td><td class="check">Yes</td><td class="check">Yes, by ref</td><td class="cross">One action per call</td></tr>
+                <tr><td>OS baselines (OSWorld a11y tree, Set-of-Marks)</td><td class="check">Yes</td><td class="cross">Mapped back to pixels</td><td class="cross">No</td></tr>
+                <tr class="is-ours"><td>Hybrid Computer Use</td><td>Compact working tree</td><td>Ref-bound (<code>rN</code>, <code>wN</code>)</td><td>Up to 64 actions with diff</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Method -->
+    <section class="section section-alt" id="method">
+      <div class="container">
+        <div class="section-head">
+          <h2>Three channels, one desktop</h2>
+          <p>HCU adds two MCP tools, AX and GUI, next to the agent's own code tools. All three channels change the same desktop, so HCU checks live state before every input.</p>
+        </div>
+
+        <div class="grid-3">
+          <article class="card channel is-code">
+            <div class="channel-head"><h3>Programmatic</h3><span class="tag tag-code">Code</span></div>
+            <p>Edit files, query databases, and run CLI tools directly. This channel is the agent's native shell; HCU does not wrap it.</p>
+            <div class="channel-tools"><code>bash</code><code>python</code><code>file edit</code></div>
+            <p class="channel-guard"><b>Shared state.</b> Code changes are visible to the next AX or GUI call.</p>
+          </article>
+          <article class="card channel is-ax">
+            <div class="channel-head"><h3>Semantic</h3><span class="tag tag-ax">AX</span></div>
+            <p>Read a compact control tree, find elements, and run a batch of up to 64 actions on short refs, with in-call waits. Each batch reports a diff.</p>
+            <div class="channel-tools"><code>apps</code><code>observe</code><code>find</code><code>act</code></div>
+            <p class="channel-guard"><b>Target guard.</b> HCU resolves every ref again against the live tree and its window before input.</p>
+          </article>
+          <article class="card channel is-gui">
+            <div class="channel-head"><h3>Visual</h3><span class="tag tag-gui">GUI</span></div>
+            <p>See the full desktop at 1366 × 768, zoom into small text, and click, drag, scroll, and type in one batch. Use GUI for canvases, images, and controls that AX cannot read.</p>
+            <div class="channel-tools"><code>screenshot</code><code>zoom</code><code>actions[]</code></div>
+            <p class="channel-guard"><b>Layout guard.</b> Coordinates belong to the last screenshot. If the window under a point moved, closed, or was covered, HCU sends no input and returns a fresh screenshot.</p>
+          </article>
+        </div>
+
+        <div class="subhead">
+          <h3>One AX call, from tree to diff</h3>
+          <p>In a typical AX action call, the model sends one batch. HCU resolves the refs, dispatches the actions, waits, and reports the change in the same round trip.</p>
+        </div>
+        <div class="flow">
+          <article class="card flow-step">
+            <h4><span class="step-no">1</span>Project the tree</h4>
+            <p>HCU reads the accessibility tree (169 nodes for Chrome settings) and shows the model a 73-line view that keeps every control the model can act on.</p>
+            <pre class="code">window: "Settings - Site settings" [ref=w1]
+ - textbox "Search settings" [ref=r15]
+ - link "Location" [ref=r37]
+ - link "Camera" [ref=r38]</pre>
+          </article>
+          <article class="card flow-step">
+            <h4><span class="step-no">2</span>Send one batch</h4>
+            <p>The model sends a batch with an in-call wait instead of one action per model turn.</p>
+            <pre class="code">AX(mode="act", actions=[
+  {"type":"click","ref":"r15"},
+  {"type":"type","ref":"r15",
+   "text":"camera"},
+  {"type":"keypress","keys":["ENTER"]},
+  {"type":"wait","settle":true}])</pre>
+          </article>
+          <article class="card flow-step">
+            <h4><span class="step-no">3</span>Guard and dispatch</h4>
+            <p>Before each step, HCU resolves the ref against the live tree and its window, sends the native action, and waits until the page stops changing.</p>
+            <pre class="code">r15 textbox in w1      ok
+click · type · keypress  sent
+settle: changed, then quiet
+4 / 4 steps in 1 call</pre>
+          </article>
+          <article class="card flow-step">
+            <h4><span class="step-no">4</span>Return a diff</h4>
+            <p>HCU returns one status line, the effect on each target, and a diff against the tree before the batch.</p>
+            <pre class="code">{"ok":true,"input_emitted":true,
+ "completed":4,"requested":4}
+effect: r15 textbox "Search settings"
+  value=""→"camera"
+ax_diff:
+ - &lt;removed&gt; link "Location"
+ - &lt;changed&gt; link "Camera" [ref=r38]
+ absent_refs: [r37]</pre>
+          </article>
+        </div>
+
+        <div class="subhead">
+          <h3>How the layout guard stops a misclick</h3>
+          <p>A schematic case. An AX action changes the window after the screenshot, so a click planned on the old picture would land on another button.</p>
+        </div>
+        <div class="card guard-demo" id="guard-demo" data-step="1">
+          <div class="gd-stage" aria-hidden="true">
+            <div class="gd-win">
+              <div class="gd-title"><span>report.docx · Editor</span><i></i><i></i><i></i></div>
+              <div class="gd-tools">
+                <span class="gd-fmt"><i>B</i><i>I</i><i>U</i></span>
+                <span class="gd-btn is-del"><svg viewBox="0 0 16 16"><path d="M3 4h10M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg>Delete</span>
+                <span class="gd-btn is-save"><svg viewBox="0 0 16 16"><path d="M3 2.5h8l2 2v9H3zM5.5 2.5v3h5v-3M5 13.5v-4h6v4"/></svg>Save</span>
+              </div>
+              <div class="gd-body">
+                <div class="gd-page"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="gd-panel"><div class="gd-panel-head">Comments<b>×</b><em>r8</em></div><i></i><i></i><i></i></div>
+              </div>
+              <div class="gd-flash"></div>
+              <span class="gd-aim"></span>
+              <span class="gd-tag is-stale">Old point is now on Delete</span>
+              <span class="gd-toast">Saved</span>
+            </div>
+            <div class="gd-log">
+              <code data-s="1">GUI screenshot → layout recorded</code>
+              <code data-s="2">AX click r8 → panel closed</code>
+              <code data-s="3">GUI click(430, 92) → stale layout, 0 sent</code>
+              <code data-s="4">GUI click(570, 92) → 1 of 1 sent</code>
+            </div>
+          </div>
+          <ol class="gd-steps">
+            <li class="is-gui"><button type="button" data-step="1"><span class="tl-dot">1</span><span class="gd-txt"><span class="tl-ch">GUI</span><strong>Screenshot</strong><span>The model plans a click on Save in this picture. HCU records the layout.</span></span></button></li>
+            <li class="is-ax"><button type="button" data-step="2"><span class="tl-dot">2</span><span class="gd-txt"><span class="tl-ch">AX</span><strong>AX closes the panel</strong><span>The toolbar shifts right. Delete now sits where Save was.</span></span></button></li>
+            <li class="is-block"><button type="button" data-step="3"><span class="tl-dot">3</span><span class="gd-txt"><span class="tl-ch">Guard</span><strong>Stale click blocked</strong><span>The layout changed since the screenshot. HCU sends nothing and returns a fresh one.</span></span></button></li>
+            <li class="is-ok"><button type="button" data-step="4"><span class="tl-dot">4</span><span class="gd-txt"><span class="tl-ch">GUI</span><strong>Corrected click</strong><span>The model clicks Save at its new position.</span></span></button></li>
+          </ol>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Demos -->
+    <section class="section" id="atlas">
+      <div class="container">
+        <div class="section-head">
+          <h2>What the model reads</h2>
+          <p>Real AX captures from 9 applications. Hover a box on the screenshot or a line in the tree. Both point to the same control and the same ref.</p>
+        </div>
+        <!-- AX atlas -->
+        <div id="panel-atlas">
+          <div class="chips" id="atlas-scenes" role="group" aria-label="Application"></div>
+          <div class="demo" style="margin-top:16px">
+            <div class="demo-bar">
+              <div>
+                <div class="demo-title" id="atlas-title">Chrome site settings</div>
+              </div>
+              <div style="display:flex;gap:12px;align-items:center">
+                <label class="toggle"><input type="checkbox" id="atlas-boxes" checked /> Show all boxes</label>
+                <button class="btn btn-icon btn-subtle" type="button" id="atlas-expand" aria-label="Open full-size capture"><svg><use href="#i-expand"/></svg></button>
+              </div>
+            </div>
+            <div class="atlas">
+              <div class="atlas-stage">
+                <div class="atlas-shot" id="atlas-shot">
+                  <img id="atlas-img" alt="" width="1928" height="1057" />
+                  <svg id="atlas-svg" preserveAspectRatio="none" aria-hidden="true"></svg>
+                </div>
+              </div>
+              <div class="atlas-side">
+                <div class="atlas-detail" aria-live="polite">
+                  <div class="ref" id="atlas-ref">Hover a control</div>
+                  <div class="role" id="atlas-role"></div>
+                  <div class="meta" id="atlas-meta"></div>
+                </div>
+                <div class="atlas-search">
+                  <label class="visually-hidden" for="atlas-filter">Filter the AX tree</label>
+                  <input class="input" id="atlas-filter" type="search" placeholder="Filter controls" autocomplete="off" />
+                </div>
+                <div class="atlas-tree" id="atlas-tree" tabindex="0" aria-label="AX view returned by HCU"></div>
+              </div>
+            </div>
+            <div class="tok-compare" id="atlas-tokens"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section section-alt" id="batching">
+      <div class="container">
+        <div class="section-head">
+          <h2>Same task, three interfaces, one clock</h2>
+          <p>Screenshot clicks, single AX actions, and HCU make the same changes from the same start.</p>
+        </div>
+        <!-- Batched execution replay -->
+        <div id="panel-race">
+          <div class="chips" id="race-scenes" role="group" aria-label="Task"></div>
+          <div class="demo" style="margin-top:12px">
+            <div class="race-head">
+              <h4 class="visually-hidden" id="race-title"></h4>
+              <ol class="race-steps" id="race-steps" aria-label="Changes to make"></ol>
+            </div>
+            <div class="race-screens" id="race-screens"></div>
+            <div class="race-lanes">
+              <div class="race-axis" id="race-axis" aria-hidden="true"></div>
+              <div class="race-body">
+                <div id="race-lanes"></div>
+                <div class="race-head-layer"><div class="playhead" id="race-playhead"></div></div>
+              </div>
+            </div>
+            <div class="race-controls">
+              <button class="btn btn-primary" type="button" id="race-play"><svg><use href="#i-play"/></svg><span>Play</span></button>
+              <button class="btn btn-icon" type="button" id="race-restart" aria-label="Restart"><svg><use href="#i-restart"/></svg></button>
+              <label class="visually-hidden" for="race-scrub">Time</label>
+              <input type="range" id="race-scrub" min="0" max="1000" value="0" />
+              <span class="race-clock" id="race-clock">0 s</span>
+            </div>
+            <details class="race-calls">
+              <summary>Show the calls<span class="race-note">Illustrative replay on real AX captures, timed at about 7 s per model turn and 2.4K tokens per 1080p screenshot.</span></summary>
+              <div class="race-call">
+              <div>
+                <div class="code-title"><span id="race-call-title">Selected turn</span></div>
+                <pre class="code" id="race-call"></pre>
+              </div>
+              <div>
+                <div class="code-title"><span id="race-code-title">Calls</span></div>
+                <pre class="code" id="race-code"></pre>
+              </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="section" id="results">
+      <div class="container">
+        <div class="section-head">
+          <h2>Higher scores at lower cost, on every platform</h2>
+          <p>Each comparison keeps the model, harness, tasks, and step budget fixed and changes only the computer-use interface.</p>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Benchmark">
+          <button class="tab" role="tab" id="tab-osw2" aria-controls="panel-osw2" aria-selected="true">OSWorld 2.0</button>
+          <button class="tab" role="tab" id="tab-osw1" aria-controls="panel-osw1" aria-selected="false" tabindex="-1">OSWorld 1.0</button>
+          <button class="tab" role="tab" id="tab-waa" aria-controls="panel-waa" aria-selected="false" tabindex="-1">Windows Agent Arena</button>
+          <button class="tab" role="tab" id="tab-mac" aria-controls="panel-mac" aria-selected="false" tabindex="-1">MacAgentBench</button>
+          <button class="tab" role="tab" id="tab-weave" aria-controls="panel-weave" aria-selected="false" tabindex="-1">WeaveBench</button>
+          <button class="tab" role="tab" id="tab-models" aria-controls="panel-models" aria-selected="false" tabindex="-1">Across models</button>
+        </div>
+
+        <div class="tab-panel result-panel" role="tabpanel" id="panel-osw2" aria-labelledby="tab-osw2" data-result="osw2"></div>
+        <div class="tab-panel result-panel" role="tabpanel" id="panel-osw1" aria-labelledby="tab-osw1" data-result="osw1" hidden></div>
+        <div class="tab-panel result-panel" role="tabpanel" id="panel-waa" aria-labelledby="tab-waa" data-result="waa" hidden></div>
+        <div class="tab-panel result-panel" role="tabpanel" id="panel-mac" aria-labelledby="tab-mac" data-result="mac" hidden></div>
+        <div class="tab-panel result-panel" role="tabpanel" id="panel-weave" aria-labelledby="tab-weave" data-result="weave" hidden></div>
+        <div class="tab-panel result-panel" role="tabpanel" id="panel-models" aria-labelledby="tab-models" data-result="models" hidden></div>
+      </div>
+    </section>
+
+    <!-- Analysis -->
+    <section class="section section-alt" id="analysis">
+      <div class="container">
+        <div class="section-head">
+          <h2>Where the gains come from</h2>
+          <p>Every model scores higher with HCU, and each divides work across the channels differently. Nearly all of the gain comes from tasks where HCU makes at least one AX or GUI request.</p>
+        </div>
+
+        <section class="chart-card">
+          <header><h4>How each model uses HCU</h4><span>Share of desktop requests, OSWorld 1.0</span></header>
+          <div class="legend"><span><i class="seg-ax-obs"></i>AX observe</span><span><i class="seg-ax-exec"></i>AX act</span><span><i class="seg-gui-obs"></i>GUI screenshot</span><span><i class="seg-gui-exec"></i>GUI act</span></div>
+          <div id="chart-usage"></div>
+          <p class="chart-note">GPT-5.4 sends 80% of desktop requests to AX. Claude Opus 5.5 sends 94% to GUI, and 58% of its acting requests contain two or more actions. On 29% to 31% of the tasks where GPT-5.4, Gemini 3.8 Flash, or Grok 4.7 used GUI, every GUI request was a screenshot and every action went through AX.</p>
+        </section>
+        <div class="grid-2" style="margin-top:16px">
+          <section class="chart-card">
+            <header><h4>Where the score gain comes from</h4><span>Gain from tasks that used AX or GUI</span></header>
+            <div id="chart-gain"></div>
+            <p class="chart-note">Shell-only tasks change by less than one point in either direction.</p>
+          </section>
+          <section class="chart-card">
+            <header><h4>Tasks that use desktop tools</h4><span><i class="key is-base"></i>CUA Driver <i class="key is-ours"></i>HCU</span></header>
+            <div id="chart-desktop"></div>
+            <p class="chart-note">With HCU, every model uses AX or GUI in more tasks.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="section" id="architecture">
+      <div class="container">
+        <div class="section-head">
+          <h2>One Go core, three native providers</h2>
+          <p><code>computer-use</code> implements the contract once in Go. Each OS gets its own provider process for accessibility, capture, and input. Agents, scripts, and Python code get the same results from the same core.</p>
+        </div>
+
+        <div class="arch-layout">
+          <div class="arch-map" id="arch-map" aria-label="Architecture diagram">
+            <div class="am-row">
+              <span class="am-label">Callers</span>
+              <div class="am-cells am-3">
+                <div class="am-node is-caller" data-node="caller-mcp"><strong>Coding agents</strong><span>Codex, Claude Code, Gemini CLI, Grok Build</span></div>
+                <div class="am-node is-caller" data-node="caller-cli"><strong>Shell scripts</strong><span>Any program that runs a command</span></div>
+                <div class="am-node is-caller" data-node="caller-sdk"><strong>Python code</strong><span>Loops over live state</span></div>
+              </div>
+            </div>
+            <div class="am-row">
+              <span class="am-label">Entry points</span>
+              <div class="am-cells am-3">
+                <div class="am-node" data-node="mcp"><strong>MCP server</strong><span>stdio, in process</span></div>
+                <div class="am-node" data-node="cli"><strong>CLI</strong><span>Shorthands and <code>gui</code></span></div>
+                <div class="am-node" data-node="sdk"><strong>Python SDK</strong><span>Sync, async, PTC</span></div>
+              </div>
+              <div class="am-bus" data-node="daemon">A per-desktop daemon gives the CLI and SDK shared refs and one input lock. MCP joins with <code>--attach</code>.</div>
+            </div>
+            <div class="am-row">
+              <span class="am-label">Core<small>One Go binary</small></span>
+              <div class="am-core">
+                <div class="am-node" data-node="contract"><strong>Contract</strong><span>Schemas, typed errors</span></div>
+                <div class="am-node" data-node="state"><strong>State</strong><span>Refs and GUI frame</span></div>
+                <div class="am-node" data-node="guards"><strong>Guards</strong><span>Target and layout checks</span></div>
+                <div class="am-node is-ax" data-node="ax"><strong>AX engine</strong><span>Batches, waits, effects</span></div>
+                <div class="am-node is-gui" data-node="gui"><strong>GUI engine</strong><span>Capture, zoom, input</span></div>
+              </div>
+            </div>
+            <div class="am-row">
+              <span class="am-label">Providers<small>One per OS build</small></span>
+              <div class="am-cells am-3">
+                <div class="am-node am-os" data-node="linux"><svg class="os-icon" aria-hidden="true"><use href="#i-linux"/></svg><div><strong>Linux</strong><span>AT-SPI2, X11, XTest · Python</span></div></div>
+                <div class="am-node am-os" data-node="macos"><svg class="os-icon" aria-hidden="true"><use href="#i-apple"/></svg><div><strong>macOS</strong><span>AXUIElement, CoreGraphics, ScreenCaptureKit · Swift</span></div></div>
+                <div class="am-node am-os" data-node="windows"><svg class="os-icon" aria-hidden="true"><use href="#i-windows"/></svg><div><strong>Windows</strong><span>UIA3, Win32 · C#</span></div></div>
+              </div>
+            </div>
+            <div class="am-row">
+              <span class="am-label">Desktop</span>
+              <div class="am-desktop" data-node="desktop">Apps and windows on the agent's own computer</div>
+            </div>
+          </div>
+
+          <div class="trace-panel">
+            <div class="trace-intro">
+              <h3>Follow one call</h3>
+              <p id="trace-task">Click Save, then wait until the dialog closes.</p>
+            </div>
+            <div class="trace-controls">
+              <div class="seg" role="group" aria-label="Called from">
+                <button type="button" data-trace-entry="mcp" aria-pressed="true">MCP</button>
+                <button type="button" data-trace-entry="cli" aria-pressed="false">CLI</button>
+                <button type="button" data-trace-entry="sdk" aria-pressed="false">Python SDK</button>
+              </div>
+              <div class="seg" role="group" aria-label="Tool">
+                <button type="button" data-trace-tool="ax" aria-pressed="true">AX</button>
+                <button type="button" data-trace-tool="gui" aria-pressed="false">GUI</button>
+              </div>
+              <div class="seg" role="group" aria-label="Desktop before the call">
+                <button type="button" data-trace-case="ok" aria-pressed="true">Unchanged</button>
+                <button type="button" data-trace-case="stale" aria-pressed="false">Changed</button>
+              </div>
+            </div>
+            <ol class="trace" id="trace" aria-live="polite"></ol>
+          </div>
+        </div>
+
+        <div class="subagent-block">
+          <div>
+            <h3>One computer, several displays</h3>
+            <p>A general agent can start subagents on one host. Each subagent gets its own virtual display and HCU instance. The subagents share results through the file system.</p>
+            <p>The screenshots come from a recorded product-launch review in which four subagents work at the same time on one Linux host.</p>
+          </div>
+          <div class="subagents">
+            <figure><img src="static/imgs/subagent-1-thumb.webp?v=6ae3441b" data-full="static/imgs/subagent-1.webp?v=6ae343fd" width="640" height="360" loading="lazy" alt="Subagent reviewing slides in LibreOffice Impress" /><figcaption><strong>Marketing deck</strong>Impress</figcaption></figure>
+          <figure><img src="static/imgs/subagent-2-thumb.webp?v=6ae3441b" data-full="static/imgs/subagent-2.webp?v=6ae343fd" width="640" height="360" loading="lazy" alt="Subagent analyzing a revenue sheet in LibreOffice Calc" /><figcaption><strong>Revenue model</strong>Calc</figcaption></figure>
+          <figure><img src="static/imgs/subagent-3-thumb.webp?v=6ae3441b" data-full="static/imgs/subagent-3.webp?v=6ae343fd" width="640" height="360" loading="lazy" alt="Subagent drafting a memo in LibreOffice Writer" /><figcaption><strong>Go / no-go memo</strong>Writer</figcaption></figure>
+          <figure><img src="static/imgs/subagent-4-thumb.webp?v=6ae3441b" data-full="static/imgs/subagent-4.webp?v=6ae343fd" width="640" height="360" loading="lazy" alt="Subagent inspecting a launch microsite in Chrome" /><figcaption><strong>Launch microsite</strong>Chrome</figcaption></figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Outlook -->
+    <section class="section section-alt" id="outlook">
+      <div class="container">
+        <div class="section-head">
+          <h2>From single actions to code execution</h2>
+          <p>GUI and AX control both moved from one action per model turn to batches. The next step joins the two lines in one program.</p>
+        </div>
+
+        <div class="evo" role="table" aria-label="How computer-use interfaces evolve">
+          <div class="evo-corner" role="columnheader"></div>
+          <div class="evo-stage" role="columnheader"><span>1</span>Single action</div>
+          <div class="evo-stage is-now" role="columnheader"><span>2</span>Batched actions<em>HCU today</em></div>
+          <div class="evo-stage" role="columnheader"><span>3</span>Code execution<em class="is-next">Outlook</em></div>
+
+          <div class="evo-line is-gui" role="rowheader">GUI</div>
+          <div class="evo-cell is-gui" role="cell" data-stage="Stage 1 · Single action">
+            <p>One click per model turn. A new screenshot goes back to the model after each click.</p>
+            <pre class="code">click(812, 455)
+# new screenshot</pre>
+            <span class="evo-who">Screenshot agents</span>
+          </div>
+          <div class="evo-cell is-gui is-now" role="cell" data-stage="Stage 2 · Batched actions">
+            <p>Pointer and key actions in one call, one screenshot at the end.</p>
+            <pre class="code">GUI(actions=[
+  click, type, keypress])
+# one screenshot at the end</pre>
+            <span class="evo-who">OpenAI and Anthropic computer tools, HCU GUI tool</span>
+          </div>
+          <div class="evo-cell evo-unified" role="cell" data-stage="Stage 3 · Code execution">
+            <p><strong>GUI, AX, and ordinary code in one program.</strong> AX state becomes variables to loop and branch on. Screenshots from pyautogui stay in the program; only the result returns to the model.</p>
+            <pre class="code">import pyautogui as gui
+from pytesseract import image_to_string as ocr
+
+def receipt_total(row):         # reused per row
+    # GUI: the pixels stay in the program
+    gui.doubleClick(row.thumb.center)
+    img = gui.screenshot(region=ax.bounds("w2"))
+    gui.press("esc")
+    return money(ocr(img))
+
+for row in ax.rows("w1", status="Pending"):
+    claimed = money(row.text)   # AX: text
+    match = receipt_total(row) == claimed
+    name = "Approve" if match else "Flag"
+    ax.click(row.button(name))  # AX: by ref
+
+assert not ax.rows("w1", status="Pending")
+print(ax.diff("w1"))  # 11 approved, 3 flagged</pre>
+            <span class="evo-who">OpenAI recommends it for GPT-6 Astra; next for the HCU Python SDK</span>
+          </div>
+
+          <div class="evo-line is-ax" role="rowheader">AX</div>
+          <div class="evo-cell is-ax" role="cell" data-stage="Stage 1 · Single action">
+            <p>One AX action per call, then the agent reads the window again.</p>
+            <pre class="code">press("#12")
+# read the window again</pre>
+            <span class="evo-who">CUA Driver, Codex Computer Use</span>
+          </div>
+          <div class="evo-cell is-ax is-now" role="cell" data-stage="Stage 2 · Batched actions">
+            <p>Short refs, ordered batches with waits, and a diff instead of a new tree.</p>
+            <pre class="code">AX(mode="act", actions=[
+  {"type":"click","ref":"r19"},
+  {"type":"wait","window":"Save",
+   "gone":true}])
+# only a diff comes back</pre>
+            <span class="evo-who">HCU AX tool</span>
+          </div>
+
+          <div class="evo-line is-turns" role="rowheader">Cost</div>
+          <div class="evo-cost" role="cell" data-claims="14">
+            <div class="evo-cost-head">
+              <span>One expense review. Time counts only model waiting, at about 7 s per turn.</span>
+              <div class="seg" role="group" aria-label="Number of claims">
+                <button type="button" data-claims="14" aria-pressed="true">14 claims</button>
+                <button type="button" data-claims="140" aria-pressed="false">140 claims</button>
+              </div>
+            </div>
+            <div class="evo-turn">
+              <p><b data-a="~50" data-b="~500">~50</b> model turns</p>
+              <span class="turns-bar" data-a="50" data-b="500" aria-hidden="true"><i></i></span>
+              <small><b data-a="~50" data-b="~500">~50</b> full screenshots · <b data-a="~6" data-b="~58">~6</b> min</small>
+            </div>
+            <div class="evo-turn is-now">
+              <p><b data-a="~16" data-b="~142">~16</b> model turns</p>
+              <span class="turns-bar" data-a="16" data-b="142" aria-hidden="true"><i></i></span>
+              <small><b data-a="14" data-b="140">14</b> receipt crops · <b data-a="~2" data-b="~17">~2</b> min</small>
+            </div>
+            <div class="evo-turn is-next">
+              <p><b>1</b> model turn</p>
+              <span class="turns-bar" data-a="1" data-b="1" aria-hidden="true"><i></i></span>
+              <small><b>0</b> images, one printed line · <b>~7</b> s</small>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </section>
+
+    <!-- Citation -->
+    <section class="section" id="citation">
+      <div class="container">
+        <div class="section-head" style="margin-bottom:28px">
+          <h2>BibTeX</h2>
+        </div>
+        <div class="bibtex">
+          <button class="btn" type="button" id="copy-bibtex"><svg><use href="#i-copy"/></svg><span>Copy</span></button>
+          <pre class="code" id="bibtex-code">@article{wang2026hcu,
+  title  = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
+  author = {Wang, Haoqing and Zhang, Xiaoyi and Fan, Sicheng and Zhang, Zhexin and Zhang, Xinjie and Li, Jiahao and Li, Bin and Lu, Yan},
+  year   = {2026},
+  note   = {Preprint}
+}</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <span>Hybrid Computer Use · Microsoft Research, Fudan University, Tsinghua University</span>
+      <nav aria-label="Footer">
+        <a href="https://github.com/microsoft/Hybrid-Computer-Use" target="_blank" rel="noopener">GitHub</a>
+        <a href="assets/Hybrid-Computer-Use.pdf" target="_blank" rel="noopener">Paper</a>
+        <a href="llms.txt">llms.txt</a>
+      </nav>
+    </div>
+  </footer>
+
+  <dialog class="viewer" id="viewer" aria-labelledby="viewer-title">
+    <div class="viewer-bar">
+      <span id="viewer-title"></span>
+      <button class="btn btn-icon btn-subtle" type="button" id="viewer-close" aria-label="Close"><svg><use href="#i-close"/></svg></button>
+    </div>
+    <img id="viewer-img" alt="" />
+  </dialog>
+</body>
+</html>

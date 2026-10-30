@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="light" name="color-scheme"/>
+<title>Hybrid Computer Use：面向通用智能体的程序化、语义与视觉统一接口</title>
+<meta content="Hybrid Computer Use（HCU）是一个开源 MCP 服务器，让 Codex、Claude Code 等 AI 智能体通过代码、无障碍接口（AX）和 GUI 操作 Linux、macOS 与 Windows。在 OSWorld 2.0 上得分 72.37%；在 OSWorld 1.0 上得分 70.13%，成本降低 59%；在 Windows Agent Arena 上得分 80.86%，成本降低 51%。" name="description"/>
+<meta content="混合计算机使用, Hybrid Computer Use, HCU, 计算机使用智能体, 电脑操作智能体, Computer Use, GUI 智能体, 桌面智能体, 操作系统智能体, AI 智能体, 大模型智能体, 多模态智能体, 智能体-计算机接口, 无障碍树, 无障碍接口, AX, AT-SPI, UI Automation, AXUIElement, GUI 自动化, 桌面自动化, MCP, 模型上下文协议, MCP 服务器, Codex, Claude Code, Gemini CLI, 代码执行, 程序化工具调用, OSWorld, Windows Agent Arena, MacAgentBench, WeaveBench, CUA Driver, 微软研究院" name="keywords"/>
+<meta content="Haoqing Wang, Xiaoyi Zhang, Sicheng Fan, Zhexin Zhang, Xinjie Zhang, Jiahao Li, Bin Li, Yan Lu" name="author"/>
+<meta content="index, follow, max-image-preview:large, max-snippet:-1" name="robots"/>
+<meta content="#ffffff" name="theme-color"/>
+<link href="favicon.ico?v=6ae34006" rel="icon" sizes="48x48"/>
+<link href="static/imgs/favicon.svg?v=6ae34005" rel="icon" type="image/svg+xml"/>
+<link href="static/imgs/apple-touch-icon.png?v=6ae34006" rel="apple-touch-icon"/>
+<link href="https://microsoft.github.io/Hybrid-Computer-Use/zh.html" rel="canonical"/>
+<link href="https://microsoft.github.io/Hybrid-Computer-Use/" hreflang="en" rel="alternate"/>
+<link href="https://microsoft.github.io/Hybrid-Computer-Use/zh.html" hreflang="zh-CN" rel="alternate"/>
+<link href="https://microsoft.github.io/Hybrid-Computer-Use/" hreflang="x-default" rel="alternate"/>
+<link href="llms.txt" rel="alternate" title="llms.txt" type="text/plain"/>
+<link href="llms-full.txt" rel="alternate" title="llms-full.txt" type="text/plain"/>
+<meta content="Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents" name="citation_title"/>
+<meta content="Haoqing Wang" name="citation_author"/>
+<meta content="Microsoft Research" name="citation_author_institution"/>
+<meta content="Xiaoyi Zhang" name="citation_author"/>
+<meta content="Microsoft Research" name="citation_author_institution"/>
+<meta content="Sicheng Fan" name="citation_author"/>
+<meta content="Fudan University" name="citation_author_institution"/>
+<meta content="Zhexin Zhang" name="citation_author"/>
+<meta content="Tsinghua University" name="citation_author_institution"/>
+<meta content="Xinjie Zhang" name="citation_author"/>
+<meta content="Microsoft Research" name="citation_author_institution"/>
+<meta content="Jiahao Li" name="citation_author"/>
+<meta content="Microsoft Research" name="citation_author_institution"/>
+<meta content="Bin Li" name="citation_author"/>
+<meta content="Microsoft Research" name="citation_author_institution"/>
+<meta content="Yan Lu" name="citation_author"/>
+<meta content="Microsoft Research" name="citation_author_institution"/>
+<meta content="2026" name="citation_publication_date"/>
+<meta content="https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf" name="citation_pdf_url"/>
+<meta content="computer-use agents; GUI agents; accessibility; MCP; OSWorld" name="citation_keywords"/>
+<meta content="Hybrid Computer Use" property="og:site_name"/>
+<meta content="Hybrid Computer Use（HCU）" property="og:title"/>
+<meta content="一个 MCP 服务器，用代码、无障碍接口（AX）和 GUI 操作 Linux、macOS 与 Windows 桌面。" property="og:description"/>
+<meta content="website" property="og:type"/>
+<meta content="https://microsoft.github.io/Hybrid-Computer-Use/zh.html" property="og:url"/>
+<meta content="zh_CN" property="og:locale"/>
+<meta content="en_US" property="og:locale:alternate"/>
+<meta content="https://microsoft.github.io/Hybrid-Computer-Use/static/imgs/social-preview.png" property="og:image"/>
+<meta content="1280" property="og:image:width"/>
+<meta content="640" property="og:image:height"/>
+<meta content="智能体通过三个通道操作计算机：语义 AX、视觉 GUI，以及程序化的代码或 CLI。" property="og:image:alt"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Hybrid Computer Use（HCU）" name="twitter:title"/>
+<meta content="一个 MCP 服务器，用代码、无障碍接口（AX）和 GUI 操作 Linux、macOS 与 Windows 桌面。" name="twitter:description"/>
+<meta content="https://microsoft.github.io/Hybrid-Computer-Use/static/imgs/social-preview.png" name="twitter:image"/>
+<link href="static/css/site.css?v=6ae344fa" rel="stylesheet"/>
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ScholarlyArticle",
+        "@id": "#paper",
+        "headline": "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents",
+        "name": "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents",
+        "alternateName": "HCU",
+        "abstract": "Computer-use agents now run tasks from everyday desktop work to long professional workflows. Most agent interfaces use screenshots with mouse and keyboard input, so the model must interpret pixels at every step while the semantic and programmatic interfaces of the computer stay hidden. We introduce Hybrid Computer Use (HCU), which combines code and command-line tools, accessibility (AX), and the GUI in one interface. HCU is a two-tool MCP server (AX and GUI) that runs beside the agent's own shell and file tools. It returns compact AX working trees with short refs, runs batches of actions with in-call waits, reports post-action AX diffs, and checks live state before it sends any desktop input. On OSWorld 2.0, OSWorld 1.0 (five frontier models, four harnesses), WeaveBench, MacAgentBench, and Windows Agent Arena, HCU raises task scores and lowers cost.",
+        "author": [
+          {
+            "@type": "Person",
+            "name": "Haoqing Wang",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            },
+            "sameAs": "https://github.com/hqhq1025"
+          },
+          {
+            "@type": "Person",
+            "name": "Xiaoyi Zhang",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Sicheng Fan",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Fudan University"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Zhexin Zhang",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Tsinghua University"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Xinjie Zhang",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Jiahao Li",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Bin Li",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          },
+          {
+            "@type": "Person",
+            "name": "Yan Lu",
+            "affiliation": {
+              "@type": "Organization",
+              "name": "Microsoft Research"
+            }
+          }
+        ],
+        "datePublished": "2026",
+        "inLanguage": "en",
+        "keywords": [
+          "Hybrid Computer Use",
+          "HCU",
+          "computer use",
+          "computer-use agent",
+          "CUA",
+          "GUI agent",
+          "desktop agent",
+          "OS agent",
+          "AI agent",
+          "LLM agent",
+          "multimodal agent",
+          "agent-computer interface",
+          "accessibility tree",
+          "AX",
+          "AT-SPI",
+          "UI Automation",
+          "AXUIElement",
+          "GUI automation",
+          "desktop automation",
+          "MCP",
+          "Model Context Protocol",
+          "MCP server",
+          "Codex",
+          "Claude Code",
+          "Gemini CLI",
+          "Grok Build",
+          "code execution",
+          "programmatic tool calling",
+          "OSWorld",
+          "OSWorld 2.0",
+          "Windows Agent Arena",
+          "MacAgentBench",
+          "WeaveBench",
+          "CUA Driver",
+          "Microsoft Research"
+        ],
+        "about": [
+          {
+            "@type": "Thing",
+            "name": "Computer-use agents"
+          },
+          {
+            "@type": "Thing",
+            "name": "GUI agents"
+          },
+          {
+            "@type": "Thing",
+            "name": "Accessibility APIs"
+          },
+          {
+            "@type": "Thing",
+            "name": "Model Context Protocol"
+          },
+          {
+            "@type": "Thing",
+            "name": "Desktop automation"
+          }
+        ],
+        "mentions": [
+          {
+            "@type": "CreativeWork",
+            "name": "OSWorld"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "Windows Agent Arena"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "MacAgentBench"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "WeaveBench"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "CUA Driver"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "Codex"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "Claude Code"
+          }
+        ],
+        "encoding": {
+          "@type": "MediaObject",
+          "encodingFormat": "application/pdf",
+          "contentUrl": "https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf"
+        },
+        "image": "https://microsoft.github.io/Hybrid-Computer-Use/static/imgs/social-preview.png",
+        "isBasedOn": {
+          "@id": "#software"
+        },
+        "description": "HCU scores 72.37% Partial on OSWorld 2.0 (GPT-6 Astra) and 35.19% Binary with Claude Opus 5; 70.13% on OSWorld 1.0 with 59.1% lower cost than CUA Driver; 80.86% on Windows Agent Arena with 50.6% lower cost; 25 of 28 MacAgentBench UI tasks with 51.4% lower cost; and 53.25% on WeaveBench with 46.3% lower cost."
+      },
+      {
+        "@type": "SoftwareSourceCode",
+        "@id": "#software",
+        "name": "Hybrid Computer Use (computer-use MCP server)",
+        "alternateName": [
+          "HCU",
+          "computer-use"
+        ],
+        "description": "One MCP server for code, accessibility (AX), and GUI control of Linux, macOS, and Windows desktops.",
+        "codeRepository": "https://github.com/microsoft/Hybrid-Computer-Use",
+        "url": "https://github.com/microsoft/Hybrid-Computer-Use",
+        "license": "https://opensource.org/licenses/MIT",
+        "programmingLanguage": [
+          "Go",
+          "Python",
+          "Swift",
+          "C#"
+        ],
+        "runtimePlatform": [
+          "Linux",
+          "macOS",
+          "Windows"
+        ],
+        "softwareVersion": "1.0.0",
+        "author": {
+          "@type": "Person",
+          "name": "Haoqing Wang",
+          "affiliation": {
+            "@type": "Organization",
+            "name": "Microsoft Research"
+          },
+          "sameAs": "https://github.com/hqhq1025"
+        },
+        "creator": {
+          "@type": "Organization",
+          "name": "Microsoft Research"
+        },
+        "keywords": [
+          "MCP server",
+          "computer use",
+          "accessibility",
+          "GUI automation",
+          "AI agents"
+        ]
+      },
+      {
+        "@type": "WebPage",
+        "@id": "#page",
+        "name": "Hybrid Computer Use (HCU)",
+        "description": "Hybrid Computer Use（HCU）是一个开源 MCP 服务器，让 Codex、Claude Code 等 AI 智能体通过代码、无障碍接口（AX）和 GUI 操作 Linux、macOS 与 Windows。在 OSWorld 2.0 上得分 72.37%；在 OSWorld 1.0 上得分 70.13%，成本降低 59%；在 Windows Agent Arena 上得分 80.86%，成本降低 51%。",
+        "inLanguage": "zh-CN",
+        "mainEntity": {
+          "@id": "#paper"
+        },
+        "primaryImageOfPage": "https://microsoft.github.io/Hybrid-Computer-Use/static/imgs/social-preview.png"
+      }
+    ]
+  }
+  </script>
+<script defer="" src="static/js/i18n-zh.js?v=6ae44e99"></script>
+  <script defer="" src="static/js/site.js?v=6ae344fa"></script>
+<script defer="" src="static/js/charts.js?v=6ae3452a"></script>
+</head>
+<body>
+<svg aria-hidden="true" height="0" style="position:absolute" width="0">
+<symbol id="i-paper" viewbox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></symbol>
+<symbol id="i-github" viewbox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></symbol>
+<symbol id="i-quote" viewbox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.76-2-2-2H4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 0-1 1v3c0 1 0 1 1 1z"></path><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.76-2-2-2h-4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path></symbol>
+<symbol id="i-terminal" viewbox="0 0 24 24"><path d="m4 17 6-6-6-6"></path><path d="M12 19h8"></path></symbol>
+<symbol id="i-tree" viewbox="0 0 24 24"><rect height="6" rx="1" width="6" x="16" y="16"></rect><rect height="6" rx="1" width="6" x="2" y="16"></rect><rect height="6" rx="1" width="6" x="9" y="2"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></symbol>
+<symbol id="i-pointer" viewbox="0 0 24 24"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="m13 13 6 6"></path></symbol>
+<symbol id="i-monitor" viewbox="0 0 24 24"><rect height="14" rx="2" width="20" x="2" y="3"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></symbol>
+<symbol id="i-layers" viewbox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"></path><path d="m2 17 10 5 10-5"></path><path d="m2 12 10 5 10-5"></path></symbol>
+<symbol id="i-play" viewbox="0 0 24 24"><path d="M7 4v16l13-8z"></path></symbol>
+<symbol id="i-pause" viewbox="0 0 24 24"><path d="M8 5v14"></path><path d="M16 5v14"></path></symbol>
+<symbol id="i-restart" viewbox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></symbol>
+<symbol id="i-expand" viewbox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></symbol>
+<symbol id="i-copy" viewbox="0 0 24 24"><rect height="14" rx="2" width="14" x="8" y="8"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></symbol>
+<symbol id="i-left" viewbox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></symbol>
+<symbol id="i-right" viewbox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></symbol>
+<symbol id="i-close" viewbox="0 0 24 24"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></symbol>
+<symbol id="i-cache" viewbox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path><path d="M21 3v5h-5"></path></symbol>
+<symbol id="i-shield" viewbox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></symbol>
+<symbol id="i-linux" viewbox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.4v.019c.002.089.008.179.02.267-.193-.067-.438-.135-.607-.202a1.635 1.635 0 01-.018-.2v-.02a1.772 1.772 0 01.15-.768c.082-.22.232-.406.43-.533a.985.985 0 01.594-.2zm-2.962.059h.036c.142 0 .27.048.399.135.146.129.264.288.344.465.09.199.14.4.153.667v.004c.007.134.006.2-.002.266v.08c-.03.007-.056.018-.083.024-.152.055-.274.135-.393.2.012-.09.013-.18.003-.267v-.015c-.012-.133-.04-.2-.082-.333a.613.613 0 00-.166-.267.248.248 0 00-.183-.064h-.021c-.071.006-.13.04-.186.132a.552.552 0 00-.12.27.944.944 0 00-.023.33v.015c.012.135.037.2.08.334.046.134.098.2.166.268.01.009.02.018.034.024-.07.057-.117.07-.176.136a.304.304 0 01-.131.068 2.62 2.62 0 01-.275-.402 1.772 1.772 0 01-.155-.667 1.759 1.759 0 01.08-.668 1.43 1.43 0 01.283-.535c.128-.133.26-.2.418-.2zm1.37 1.706c.332 0 .733.065 1.216.399.293.2.523.269 1.052.468h.003c.255.136.405.266.478.399v-.131a.571.571 0 01.016.47c-.123.31-.516.643-1.063.842v.002c-.268.135-.501.333-.775.465-.276.135-.588.292-1.012.267a1.139 1.139 0 01-.448-.067 3.566 3.566 0 01-.322-.198c-.195-.135-.363-.332-.612-.465v-.005h-.005c-.4-.246-.616-.512-.686-.71-.07-.268-.005-.47.193-.6.224-.135.38-.271.483-.336.104-.074.143-.102.176-.131h.002v-.003c.169-.202.436-.47.839-.601.139-.036.294-.065.466-.065zm2.8 2.142c.358 1.417 1.196 3.475 1.735 4.473.286.534.855 1.659 1.102 3.024.156-.005.33.018.513.064.646-1.671-.546-3.467-1.089-3.966-.22-.2-.232-.335-.123-.335.59.534 1.365 1.572 1.646 2.757.13.535.16 1.104.021 1.67.067.028.135.06.205.067 1.032.534 1.413.938 1.23 1.537v-.043c-.06-.003-.12 0-.18 0h-.016c.151-.467-.182-.825-1.065-1.224-.915-.4-1.646-.336-1.77.465-.008.043-.013.066-.018.135-.068.023-.139.053-.209.064-.43.268-.662.669-.793 1.187-.13.533-.17 1.156-.205 1.869v.003c-.02.334-.17.838-.319 1.35-1.5 1.072-3.58 1.538-5.348.334a2.645 2.645 0 00-.402-.533 1.45 1.45 0 00-.275-.333c.182 0 .338-.03.465-.067a.615.615 0 00.314-.334c.108-.267 0-.697-.345-1.163-.345-.467-.931-.995-1.788-1.521-.63-.4-.986-.87-1.15-1.396-.165-.534-.143-1.085-.015-1.645.245-1.07.873-2.11 1.274-2.763.107-.065.037.135-.408.974-.396.751-1.14 2.497-.122 3.854a8.123 8.123 0 01.647-2.876c.564-1.278 1.743-3.504 1.836-5.268.048.036.217.135.289.202.218.133.38.333.59.465.21.201.477.335.876.335.039.003.075.006.11.006.412 0 .73-.134.997-.268.29-.134.52-.334.74-.4h.005c.467-.135.835-.402 1.044-.7zm2.185 8.958c.037.6.343 1.245.882 1.377.588.134 1.434-.333 1.791-.765l.211-.01c.315-.007.577.01.847.268l.003.003c.208.199.305.53.391.876.085.4.154.78.409 1.066.486.527.645.906.636 1.14l.003-.007v.018l-.003-.012c-.015.262-.185.396-.498.595-.63.401-1.746.712-2.457 1.57-.618.737-1.37 1.14-2.036 1.191-.664.053-1.237-.2-1.574-.898l-.005-.003c-.21-.4-.12-1.025.056-1.69.176-.668.428-1.344.463-1.897.037-.714.076-1.335.195-1.814.12-.465.308-.797.641-.984l.045-.022zm-10.814.049h.01c.053 0 .105.005.157.014.376.055.706.333 1.023.752l.91 1.664.003.003c.243.533.754 1.064 1.189 1.637.434.598.77 1.131.729 1.57v.006c-.057.744-.48 1.148-1.125 1.294-.645.135-1.52.002-2.395-.464-.968-.536-2.118-.469-2.857-.602-.369-.066-.61-.2-.723-.4-.11-.2-.113-.602.123-1.23v-.004l.002-.003c.117-.334.03-.752-.027-1.118-.055-.401-.083-.71.043-.94.16-.334.396-.4.69-.533.294-.135.64-.202.915-.47h.002v-.002c.256-.268.445-.601.668-.838.19-.201.38-.336.663-.336zm7.159-9.074c-.435.201-.945.535-1.488.535-.542 0-.97-.267-1.28-.466-.154-.134-.28-.268-.373-.335-.164-.134-.144-.333-.074-.333.109.016.129.134.199.2.096.066.215.2.36.333.292.2.68.467 1.167.467.485 0 1.053-.267 1.398-.466.195-.135.445-.334.648-.467.156-.136.149-.267.279-.267.128.016.034.134-.147.332a8.097 8.097 0 01-.69.468zm-1.082-1.583V5.64c-.006-.02.013-.042.029-.05.074-.043.18-.027.26.004.063 0 .16.067.15.135-.006.049-.085.066-.135.066-.055 0-.092-.043-.141-.068-.052-.018-.146-.008-.163-.065zm-.551 0c-.02.058-.113.049-.166.066-.047.025-.086.068-.14.068-.05 0-.13-.02-.136-.068-.01-.066.088-.133.15-.133.08-.031.184-.047.259-.005.019.009.036.03.03.05v.02h.003z"></path></symbol>
+<symbol id="i-apple" viewbox="0 0 24 24"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"></path></symbol>
+<symbol id="i-windows" viewbox="0 0 24 24"><path d="M0,0H11.377V11.372H0ZM12.623,0H24V11.372H12.623ZM0,12.623H11.377V24H0Zm12.623,0H24V24H12.623"></path></symbol>
+</svg>
+<a class="skip-link" href="#abstract">跳到正文</a>
+<header class="nav">
+<div class="container nav-inner">
+<a aria-label="Hybrid Computer Use，返回顶部" class="brand" href="#top"><span aria-hidden="true" class="ms-logo"><i></i><i></i><i></i><i></i></span>
+        Hybrid Computer Use</a>
+<nav aria-label="章节" class="nav-links">
+<a href="#motivation">动机</a>
+<a href="#method">方法</a>
+<a href="#atlas">AX 视图</a>
+<a href="#batching">批量执行</a>
+<a href="#results">结果</a>
+<a href="#analysis">分析</a>
+<a href="#architecture">架构</a>
+<a href="#outlook">展望</a>
+</nav>
+<div class="nav-actions">
+<a class="btn btn-subtle lang-switch" href="./" hreflang="en" lang="en">EN</a>
+<a class="btn" href="assets/Hybrid-Computer-Use.pdf" rel="noopener" target="_blank"><svg><use href="#i-paper"></use></svg><span>论文</span></a>
+<a class="btn btn-primary" href="https://github.com/microsoft/Hybrid-Computer-Use" rel="noopener" target="_blank"><svg><use href="#i-github"></use></svg><span>代码</span></a>
+</div>
+</div>
+</header>
+<main id="top">
+<!-- Hero -->
+<section class="hero">
+<div class="container">
+<h1>Hybrid Computer Use</h1>
+<p class="hero-sub">面向通用智能体的程序化、语义与视觉统一接口</p>
+<div>
+<p class="authors"><span>Haoqing Wang<sup>1*</sup></span><span>Xiaoyi Zhang<sup>1†</sup></span><span>Sicheng Fan<sup>2</sup></span><span>Zhexin Zhang<sup>3</sup></span><span>Xinjie Zhang<sup>1</sup></span><span>Jiahao Li<sup>1</sup></span><span>Bin Li<sup>1</sup></span><span>Yan Lu<sup>1</sup></span></p>
+<p class="affiliations"><span><sup>1</sup>Microsoft Research</span><span><sup>2</sup>复旦大学</span><span><sup>3</sup>清华大学</span></p>
+<p class="author-note">* 在 Microsoft Research 实习期间完成。† 项目负责人。</p>
+</div>
+<div class="hero-actions">
+<a class="btn btn-primary btn-lg" href="assets/Hybrid-Computer-Use.pdf" rel="noopener" target="_blank"><svg><use href="#i-paper"></use></svg>论文</a>
+<a class="btn btn-lg" href="https://github.com/microsoft/Hybrid-Computer-Use" rel="noopener" target="_blank"><svg><use href="#i-github"></use></svg>代码</a>
+<a class="btn btn-lg" href="#citation"><svg><use href="#i-quote"></use></svg>BibTeX</a>
+</div>
+<figure class="hero-fig">
+<div class="hero-fig-art"><div class="fig1"><img alt="智能体通过三个通道操作计算机：语义 AX、视觉 GUI，以及程序化的代码或 CLI。" data-motion-base="static/imgs/hcu-channels-base-zh.svg?v=6ae34393" height="759" src="static/imgs/hcu-channels-zh.svg?v=6ae34393" width="1789"/></div></div>
+<div class="hero-fig-chart" id="hero-chart"></div>
+</figure>
+<div class="scoreboard">
+<a class="score" data-result-tab="osw2" href="#results">
+<span class="score-os"><svg aria-hidden="true" class="os-icon"><use href="#i-linux"></use></svg>Linux · 108 个任务</span>
+<span class="score-value">72.37<small>%</small></span>
+<span class="score-name">OSWorld 2.0</span>
+<span class="score-delta">全集中 Partial 最高</span>
+</a>
+<a class="score" data-result-tab="osw1" href="#results">
+<span class="score-os"><svg aria-hidden="true" class="os-icon"><use href="#i-linux"></use></svg>Linux · 360 个任务</span>
+<span class="score-value">70.13<small>%</small></span>
+<span class="score-name">OSWorld 1.0</span>
+<span class="score-delta">+7.66 个百分点 · 成本 −59.1%</span>
+</a>
+<a class="score" data-result-tab="waa" href="#results">
+<span class="score-os"><svg aria-hidden="true" class="os-icon"><use href="#i-windows"></use></svg>Windows · 111 个任务</span>
+<span class="score-value">80.86<small>%</small></span>
+<span class="score-name">Windows Agent Arena</span>
+<span class="score-delta">+8.97 个百分点 · 成本 −50.6%</span>
+</a>
+<a class="score" data-result-tab="mac" href="#results">
+<span class="score-os"><svg aria-hidden="true" class="os-icon"><use href="#i-apple"></use></svg>macOS · 28 个 UI 任务</span>
+<span class="score-value">89.3<small>%</small></span>
+<span class="score-name">MacAgentBench</span>
+<span class="score-delta">+3.6 个百分点 · 成本 −51.4%</span>
+</a>
+<a class="score" data-result-tab="weave" href="#results">
+<span class="score-os"><svg aria-hidden="true" class="os-icon"><use href="#i-linux"></use></svg>Linux · 114 个任务</span>
+<span class="score-value">53.25<small>%</small></span>
+<span class="score-name">WeaveBench</span>
+<span class="score-delta">+6.88 个百分点 · 成本 −46.3%</span>
+</a>
+</div>
+<p class="scoreboard-note">提升幅度均相对 CUA Driver 计算，模型、智能体框架和任务相同。</p>
+</div>
+</section>
+<!-- Abstract -->
+<section class="section section-alt" id="abstract">
+<div class="container">
+<div class="abstract-layout">
+<div class="abstract">
+<h2>摘要</h2>
+<p>Computer Use 智能体如今执行的任务涵盖日常桌面工作和长链路专业流程。多数智能体接口使用截图加鼠标和键盘输入。受这一设计限制，模型每一步都得解读像素，而计算机的语义接口和程序化接口却被藏了起来。</p>
+<p>我们提出 <strong>Hybrid Computer Use（HCU）</strong>。HCU 把三个通道合进一个接口：<span class="chw chw-code">代码与命令行工具</span>、<span class="chw chw-ax">无障碍接口（AX）</span>和 <span class="chw chw-gui">GUI</span>。HCU 是一个提供 AX 和 GUI 两个工具的 MCP 服务器，与智能体自带的 shell 和文件工具配合运行。HCU 返回带短 ref（<code>aN → wN → rN</code>）的精简 AX 工作树，执行含调用内等待的批量动作，返回动作后的 AX diff，并在发送任何桌面输入前检查实时状态。</p>
+<p>在 OSWorld 2.0、OSWorld 1.0（5 个前沿模型、4 个智能体框架）、WeaveBench、MacAgentBench 和 Windows Agent Arena 上，HCU 提高了任务得分，并降低了成本。</p>
+</div>
+<aside class="adds">
+<h3>HCU 新增的能力</h3>
+<ul>
+<li><span aria-hidden="true" class="add-vis"><span class="tk tk-ax">AX</span><span class="tk tk-gui">GUI</span></span><span class="add-txt"><strong>两个 MCP 工具</strong>（AX 和 GUI），与智能体自带的 shell 和文件工具并列。</span></li>
+<li><span aria-hidden="true" class="add-vis add-refs"><b>a1</b>›<b>w1</b>›<b>r12</b></span><span class="add-txt"><strong>短 ref</strong>（如 <code>a1 → w1 → r12</code>），始终绑定到同一个窗口。</span></li>
+<li><span aria-hidden="true" class="add-vis"><span class="add-batch"><i></i><i></i><i></i><i></i><i></i><i></i></span></span><span class="add-txt"><strong>批次</strong>，一次调用最多 64 个动作，可在调用内等待，并返回 diff。</span></li>
+<li><span aria-hidden="true" class="add-vis add-guard"><b>r13</b><em>✓</em><b>x,y</b><em>✓</em></span><span class="add-txt"><strong>校验</strong>，在发送任何输入前检查目标和布局。</span></li>
+<li><span aria-hidden="true" class="add-vis add-os"><svg class="os-icon"><use href="#i-linux"></use></svg><svg class="os-icon"><use href="#i-apple"></use></svg><svg class="os-icon"><use href="#i-windows"></use></svg></span><span class="add-txt"><strong>一个 Go 核心</strong>，配 Linux、macOS 和 Windows 原生平台后端。</span></li>
+</ul>
+</aside>
+</div>
+</div>
+</section>
+<!-- Motivation -->
+<section class="section" id="motivation">
+<div class="container">
+<div class="section-head">
+<h2>Computer Use 应内嵌于通用智能体</h2>
+<p>评测基准里的智能体通常跑一个独立的截图循环。Codex 和 Claude Code 等生产级智能体已经具备代码工具、缓存和 Skill。HCU 把计算机接入现有智能体，而不是另起一个新循环。</p>
+</div>
+<div class="grid-3">
+<article class="card why-card">
+<div aria-hidden="true" class="why-vis">
+<div class="pr-row"><span class="pr-lab">截图循环</span><span class="pr-blocks"><i data-at="1"></i><i class="img gone" data-at="2" data-off="4"></i><i data-at="3"></i><i class="img gone" data-at="4" data-off="6"></i><i data-at="5"></i><i class="img" data-at="6"></i></span><span class="pr-note is-miss" data-at="4" data-hit="6">缓存失效</span></div>
+<div class="pr-row"><span class="pr-lab">智能体框架</span><span class="pr-blocks is-cached"><i data-at="1" data-hit="2"></i><i data-at="2" data-hit="3"></i><i data-at="3" data-hit="4"></i><i data-at="4" data-hit="5"></i><i data-at="5" data-hit="6"></i><i class="new" data-at="6"></i></span><span class="pr-note is-hit" data-at="2">命中缓存</span></div>
+</div>
+<h3>保持上下文稳定</h3>
+<p>截图循环每一步都发送一张 1080p 图像（约 2.4K token），并丢弃旧图像。每次丢弃都会改动 Prompt 前缀，导致 Prompt 缓存失效。在只追加的智能体框架内，早先几轮的内容一直留在缓存里。</p>
+</article>
+<article class="card why-card">
+<div aria-hidden="true" class="why-vis why-tree"><span data-at="1" data-off="7"><em>window</em> "Save As"</span><span class="d1" data-at="2" data-hit="4" data-off="7"><em>textbox</em> "File name" <b>r11</b></span><span class="d1" data-at="3" data-hit="5" data-off="7"><em>button</em> "Save" <b>r13</b></span></div>
+<h3>按语义操作，不只看像素</h3>
+<p>AT-SPI、AXUIElement 和 UI Automation 把每个窗口描述成一棵控件树，包含角色、值、状态和动作。现有产品已经通过这棵树执行动作，但操作系统基准的基线方法大多只用它来观察。</p>
+</article>
+<article class="card why-card">
+<div aria-hidden="true" class="why-vis">
+<div class="pr-row"><span class="pr-lab">共享桌面</span><span class="calls"><b data-at="1"><i></i></b><b data-at="2"><i class="no" data-hit="3"></i></b><b data-at="3"><i></i></b><b data-at="4"><i></i></b></span><span class="pr-note" data-at="4">4 次调用</span></div>
+<div class="pr-row"><span class="pr-lab">独立计算机</span><span class="calls"><b class="wide" data-at="1" data-hit="2"><i></i><i></i><i></i><i></i><i></i><i></i></b></span><span class="pr-note is-hit" data-at="2">1 次调用</span></div>
+</div>
+<h3>给智能体独立的计算机</h3>
+<p>为人机共用桌面设计的驱动程序只能在后台执行动作。后台执行会拒绝许多动作，且每次调用只允许一个动作。专用计算机让接口得以优先保证速度和可靠性。</p>
+</article>
+</div>
+<div class="subhead">
+<h3>智能体目前怎样使用无障碍接口</h3>
+<p>桌面产品、Web 智能体和 OS 基线都已经能读取无障碍树。HCU 在此基础上增加了绑定 ref 的动作，以及会返回 diff 的批量动作。</p>
+</div>
+<div class="card">
+<div class="table-wrap">
+<table class="table table-text">
+<thead>
+<tr><th>系统</th><th>通过 AX 观察</th><th>通过 AX 操作</th><th>带 diff 的批次</th></tr>
+</thead>
+<tbody>
+<tr><td>桌面产品（Codex Computer Use、CUA Driver）</td><td class="check">是</td><td class="check">是，后台运行</td><td class="cross">每次调用 1 个动作</td></tr>
+<tr><td>Web 智能体（WebArena、Playwright MCP）</td><td class="check">是</td><td class="check">是，按 ref</td><td class="cross">每次调用 1 个动作</td></tr>
+<tr><td>OS 基线（OSWorld a11y tree、Set-of-Marks）</td><td class="check">是</td><td class="cross">映射回像素</td><td class="cross">否</td></tr>
+<tr class="is-ours"><td>Hybrid Computer Use</td><td>精简工作树</td><td>绑定 ref（<code>rN</code>、<code>wN</code>）</td><td>最多 64 个动作，带 diff</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<!-- Method -->
+<section class="section section-alt" id="method">
+<div class="container">
+<div class="section-head">
+<h2>三个通道，同一桌面</h2>
+<p>HCU 在智能体自带的代码工具旁增加 AX 和 GUI 两个 MCP 工具。三个通道改动同一个桌面，所以 HCU 在每次输入前都会检查实时状态。</p>
+</div>
+<div class="grid-3">
+<article class="card channel is-code">
+<div class="channel-head"><h3>程序化</h3><span class="tag tag-code">代码</span></div>
+<p>直接编辑文件、查询数据库、运行 CLI 工具。这个通道就是智能体原生的 shell，HCU 不做封装。</p>
+<div class="channel-tools"><code>bash</code><code>python</code><code>file edit</code></div>
+<p class="channel-guard"><b>共享状态。</b>代码所做的改动，对下一次 AX 或 GUI 调用直接可见。</p>
+</article>
+<article class="card channel is-ax">
+<div class="channel-head"><h3>语义</h3><span class="tag tag-ax">AX</span></div>
+<p>读取精简控件树，查找元素，并按短 ref 批量执行最多 64 个动作，调用内可等待。每个批次都会返回 diff。</p>
+<div class="channel-tools"><code>apps</code><code>observe</code><code>find</code><code>act</code></div>
+<p class="channel-guard"><b>目标校验。</b>输入前，HCU 会对照实时树和所属窗口重新解析每个 ref。</p>
+</article>
+<article class="card channel is-gui">
+<div class="channel-head"><h3>视觉</h3><span class="tag tag-gui">GUI</span></div>
+<p>以 1366 × 768 查看完整桌面，放大小字，并在一个批次里点击、拖拽、滚动和输入。对画布、图像以及 AX 无法读取的控件使用 GUI。</p>
+<div class="channel-tools"><code>screenshot</code><code>zoom</code><code>actions[]</code></div>
+<p class="channel-guard"><b>布局校验。</b>坐标对应上一张截图。如果坐标下的窗口已移动、关闭或被遮挡，HCU 不发送输入，而是返回一张新截图。</p>
+</article>
+</div>
+<div class="subhead">
+<h3>一次 AX 调用，从树到 diff</h3>
+<p>在典型的 AX 动作调用中，模型发送一个批次。HCU 在同一趟往返里解析 ref、派发动作、等待并报告变更。</p>
+</div>
+<div class="flow">
+<article class="card flow-step">
+<h4><span class="step-no">1</span>精简无障碍树</h4>
+<p>HCU 读取无障碍树（Chrome 设置有 169 个节点），向模型展示 73 行视图，保留模型可操作的每个控件。</p>
+<pre class="code">window: "Settings - Site settings" [ref=w1]
+ - textbox "Search settings" [ref=r15]
+ - link "Location" [ref=r37]
+ - link "Camera" [ref=r38]</pre>
+</article>
+<article class="card flow-step">
+<h4><span class="step-no">2</span>发送一个批次</h4>
+<p>模型发送带调用内等待的一个批次，而不是每轮只发一个动作。</p>
+<pre class="code">AX(mode="act", actions=[
+  {"type":"click","ref":"r15"},
+  {"type":"type","ref":"r15",
+   "text":"camera"},
+  {"type":"keypress","keys":["ENTER"]},
+  {"type":"wait","settle":true}])</pre>
+</article>
+<article class="card flow-step">
+<h4><span class="step-no">3</span>校验并派发</h4>
+<p>每一步之前，HCU 对照实时无障碍树及所属窗口解析 ref，发送原生动作，并等待页面停止变化。</p>
+<pre class="code">r15 textbox in w1      ok
+click · type · keypress  sent
+settle: changed, then quiet
+4 / 4 steps in 1 call</pre>
+</article>
+<article class="card flow-step">
+<h4><span class="step-no">4</span>返回 diff</h4>
+<p>HCU 返回一行状态、在每个目标上的效果，以及相对于该批次前无障碍树的 diff。</p>
+<pre class="code">{"ok":true,"input_emitted":true,
+ "completed":4,"requested":4}
+effect: r15 textbox "Search settings"
+  value=""→"camera"
+ax_diff:
+ - &lt;removed&gt; link "Location"
+ - &lt;changed&gt; link "Camera" [ref=r38]
+ absent_refs: [r37]</pre>
+</article>
+</div>
+<div class="subhead">
+<h3>布局校验怎样避免点错</h3>
+<p>示意场景。截图之后，一个 AX 动作改变了窗口，按旧截图计划的点击会落到另一个按钮上。</p>
+</div>
+<div class="card guard-demo" data-step="1" id="guard-demo">
+<div aria-hidden="true" class="gd-stage">
+<div class="gd-win">
+<div class="gd-title"><span>report.docx · 编辑器</span><i></i><i></i><i></i></div>
+<div class="gd-tools">
+<span class="gd-fmt"><i>B</i><i>I</i><i>U</i></span>
+<span class="gd-btn is-del"><svg viewbox="0 0 16 16"><path d="M3 4h10M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"></path></svg>删除</span>
+<span class="gd-btn is-save"><svg viewbox="0 0 16 16"><path d="M3 2.5h8l2 2v9H3zM5.5 2.5v3h5v-3M5 13.5v-4h6v4"></path></svg>保存</span>
+</div>
+<div class="gd-body">
+<div class="gd-page"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="gd-panel"><div class="gd-panel-head">批注<b>×</b><em>r8</em></div><i></i><i></i><i></i></div>
+</div>
+<div class="gd-flash"></div>
+<span class="gd-aim"></span>
+<span class="gd-tag is-stale">旧坐标现在落在“删除”上</span>
+<span class="gd-toast">已保存</span>
+</div>
+<div class="gd-log">
+<code data-s="1">GUI screenshot → layout recorded</code>
+<code data-s="2">AX click r8 → panel closed</code>
+<code data-s="3">GUI click(430, 92) → stale layout, 0 sent</code>
+<code data-s="4">GUI click(570, 92) → 1 of 1 sent</code>
+</div>
+</div>
+<ol class="gd-steps">
+<li class="is-gui"><button data-step="1" type="button"><span class="tl-dot">1</span><span class="gd-txt"><span class="tl-ch">GUI</span><strong>截图</strong><span>模型在这张截图上计划点击“保存”。HCU 记下当前布局。</span></span></button></li>
+<li class="is-ax"><button data-step="2" type="button"><span class="tl-dot">2</span><span class="gd-txt"><span class="tl-ch">AX</span><strong>AX 关闭面板</strong><span>工具栏整体右移，“删除”移到了原来“保存”的位置。</span></span></button></li>
+<li class="is-block"><button data-step="3" type="button"><span class="tl-dot">3</span><span class="gd-txt"><span class="tl-ch">校验</span><strong>拦下过期点击</strong><span>截图之后布局已经变了。HCU 不发送任何输入，并返回一张新截图。</span></span></button></li>
+<li class="is-ok"><button data-step="4" type="button"><span class="tl-dot">4</span><span class="gd-txt"><span class="tl-ch">GUI</span><strong>修正后的点击</strong><span>模型按新位置点中“保存”。</span></span></button></li>
+</ol>
+</div>
+</div>
+</section>
+<!-- Demos -->
+<section class="section" id="atlas">
+<div class="container">
+<div class="section-head">
+<h2>模型读取的内容</h2>
+<p>采自 9 个应用的真实 AX 数据。把鼠标悬停在截图的方框或 AX 树的行上。两者指向同一个控件和同一个 ref。</p>
+</div>
+<!-- AX atlas -->
+<div id="panel-atlas">
+<div aria-label="应用" class="chips" id="atlas-scenes" role="group"></div>
+<div class="demo" style="margin-top:16px">
+<div class="demo-bar">
+<div>
+<div class="demo-title" id="atlas-title">Chrome 网站设置</div>
+</div>
+<div style="display:flex;gap:12px;align-items:center">
+<label class="toggle"><input checked="" id="atlas-boxes" type="checkbox"/> 显示所有方框</label>
+<button aria-label="打开原尺寸截图" class="btn btn-icon btn-subtle" id="atlas-expand" type="button"><svg><use href="#i-expand"></use></svg></button>
+</div>
+</div>
+<div class="atlas">
+<div class="atlas-stage">
+<div class="atlas-shot" id="atlas-shot">
+<img alt="" height="1057" id="atlas-img" width="1928"/>
+<svg aria-hidden="true" id="atlas-svg" preserveaspectratio="none"></svg>
+</div>
+</div>
+<div class="atlas-side">
+<div aria-live="polite" class="atlas-detail">
+<div class="ref" id="atlas-ref">悬停在控件上</div>
+<div class="role" id="atlas-role"></div>
+<div class="meta" id="atlas-meta"></div>
+</div>
+<div class="atlas-search">
+<label class="visually-hidden" for="atlas-filter">筛选 AX 树</label>
+<input autocomplete="off" class="input" id="atlas-filter" placeholder="筛选控件" type="search"/>
+</div>
+<div aria-label="HCU 返回的 AX 视图" class="atlas-tree" id="atlas-tree" tabindex="0"></div>
+</div>
+</div>
+<div class="tok-compare" id="atlas-tokens"></div>
+</div>
+</div>
+</div>
+</section>
+<section class="section section-alt" id="batching">
+<div class="container">
+<div class="section-head">
+<h2>同一任务，三种接口，同一时钟</h2>
+<p>截图点击、单步 AX 动作和 HCU 从同一时刻出发，做出同样的修改。</p>
+</div>
+<!-- Batched execution replay -->
+<div id="panel-race">
+<div aria-label="任务" class="chips" id="race-scenes" role="group"></div>
+<div class="demo" style="margin-top:12px">
+<div class="race-head">
+<h4 class="visually-hidden" id="race-title"></h4>
+<ol aria-label="要做的改动" class="race-steps" id="race-steps"></ol>
+</div>
+<div class="race-screens" id="race-screens"></div>
+<div class="race-lanes">
+<div aria-hidden="true" class="race-axis" id="race-axis"></div>
+<div class="race-body">
+<div id="race-lanes"></div>
+<div class="race-head-layer"><div class="playhead" id="race-playhead"></div></div>
+</div>
+</div>
+<div class="race-controls">
+<button class="btn btn-primary" id="race-play" type="button"><svg><use href="#i-play"></use></svg><span>播放</span></button>
+<button aria-label="重新开始" class="btn btn-icon" id="race-restart" type="button"><svg><use href="#i-restart"></use></svg></button>
+<label class="visually-hidden" for="race-scrub">时间</label>
+<input id="race-scrub" max="1000" min="0" type="range" value="0"/>
+<span class="race-clock" id="race-clock">0 s</span>
+</div>
+<details class="race-calls">
+<summary>查看调用<span class="race-note">基于真实 AX 采集的示意回放，按每轮约 7 秒、每张 1080p 截图约 2.4K token 计时。</span></summary>
+<div class="race-call">
+<div>
+<div class="code-title"><span id="race-call-title">所选轮次</span></div>
+<pre class="code" id="race-call"></pre>
+</div>
+<div>
+<div class="code-title"><span id="race-code-title">调用</span></div>
+<pre class="code" id="race-code"></pre>
+</div>
+</div>
+</details>
+</div>
+</div>
+</div>
+</section>
+<!-- Results -->
+<section class="section" id="results">
+<div class="container">
+<div class="section-head">
+<h2>在每个平台上得分更高、成本更低</h2>
+<p>每组对比固定模型、智能体框架、任务和步数预算，只改变 Computer Use 接口。</p>
+</div>
+<div aria-label="基准" class="tabs" role="tablist">
+<button aria-controls="panel-osw2" aria-selected="true" class="tab" id="tab-osw2" role="tab">OSWorld 2.0</button>
+<button aria-controls="panel-osw1" aria-selected="false" class="tab" id="tab-osw1" role="tab" tabindex="-1">OSWorld 1.0</button>
+<button aria-controls="panel-waa" aria-selected="false" class="tab" id="tab-waa" role="tab" tabindex="-1">Windows Agent Arena</button>
+<button aria-controls="panel-mac" aria-selected="false" class="tab" id="tab-mac" role="tab" tabindex="-1">MacAgentBench</button>
+<button aria-controls="panel-weave" aria-selected="false" class="tab" id="tab-weave" role="tab" tabindex="-1">WeaveBench</button>
+<button aria-controls="panel-models" aria-selected="false" class="tab" id="tab-models" role="tab" tabindex="-1">跨模型对比</button>
+</div>
+<div aria-labelledby="tab-osw2" class="tab-panel result-panel" data-result="osw2" id="panel-osw2" role="tabpanel"></div>
+<div aria-labelledby="tab-osw1" class="tab-panel result-panel" data-result="osw1" hidden="" id="panel-osw1" role="tabpanel"></div>
+<div aria-labelledby="tab-waa" class="tab-panel result-panel" data-result="waa" hidden="" id="panel-waa" role="tabpanel"></div>
+<div aria-labelledby="tab-mac" class="tab-panel result-panel" data-result="mac" hidden="" id="panel-mac" role="tabpanel"></div>
+<div aria-labelledby="tab-weave" class="tab-panel result-panel" data-result="weave" hidden="" id="panel-weave" role="tabpanel"></div>
+<div aria-labelledby="tab-models" class="tab-panel result-panel" data-result="models" hidden="" id="panel-models" role="tabpanel"></div>
+</div>
+</section>
+<!-- Analysis -->
+<section class="section section-alt" id="analysis">
+<div class="container">
+<div class="section-head">
+<h2>提升从哪里来</h2>
+<p>每个模型使用 HCU 后得分都更高，但各自在通道间的分工不同。几乎全部提升都来自 HCU 至少发出一次 AX 或 GUI 请求的任务。</p>
+</div>
+<section class="chart-card">
+<header><h4>各模型如何使用 HCU</h4><span>桌面请求占比，OSWorld 1.0</span></header>
+<div class="legend"><span><i class="seg-ax-obs"></i>AX 观察</span><span><i class="seg-ax-exec"></i>AX 动作</span><span><i class="seg-gui-obs"></i>GUI 截图</span><span><i class="seg-gui-exec"></i>GUI 动作</span></div>
+<div id="chart-usage"></div>
+<p class="chart-note">GPT-5.4 把 80% 的桌面请求发往 AX。Claude Opus 5.5 把 94% 发往 GUI，且 58% 的动作请求包含两个或更多动作。在 GPT-5.4、Gemini 3.8 Flash 或 Grok 4.7 使用 GUI 的任务中，有 29% 到 31% 的任务 GUI 请求全是截图，所有动作都通过 AX 执行。</p>
+</section>
+<div class="grid-2" style="margin-top:16px">
+<section class="chart-card">
+<header><h4>得分提升的来源</h4><span>使用 AX 或 GUI 的任务带来的提升</span></header>
+<div id="chart-gain"></div>
+<p class="chart-note">仅用 shell 的任务，得分变化在正负 1 个百分点以内。</p>
+</section>
+<section class="chart-card">
+<header><h4>使用桌面工具的任务</h4><span><i class="key is-base"></i>CUA Driver <i class="key is-ours"></i>HCU</span></header>
+<div id="chart-desktop"></div>
+<p class="chart-note">使用 HCU 后，每个模型都在更多任务中使用 AX 或 GUI。</p>
+</section>
+</div>
+</div>
+</section>
+<!-- Architecture -->
+<section class="section" id="architecture">
+<div class="container">
+<div class="section-head">
+<h2>一个 Go 核心，三个原生平台后端</h2>
+<p><code>computer-use</code> 用 Go 把接口约定只实现一次。每个操作系统有各自负责无障碍接口、截图和输入的平台后端进程。智能体、脚本和 Python 代码从同一个核心获得一致的结果。</p>
+</div>
+<div class="arch-layout">
+<div aria-label="架构图" class="arch-map" id="arch-map">
+<div class="am-row">
+<span class="am-label">调用方</span>
+<div class="am-cells am-3">
+<div class="am-node is-caller" data-node="caller-mcp"><strong>编程智能体</strong><span>Codex、Claude Code、Gemini CLI、Grok Build</span></div>
+<div class="am-node is-caller" data-node="caller-cli"><strong>Shell 脚本</strong><span>任何运行命令的程序</span></div>
+<div class="am-node is-caller" data-node="caller-sdk"><strong>Python 代码</strong><span>在实时状态上循环</span></div>
+</div>
+</div>
+<div class="am-row">
+<span class="am-label">入口</span>
+<div class="am-cells am-3">
+<div class="am-node" data-node="mcp"><strong>MCP 服务器</strong><span>stdio，进程内</span></div>
+<div class="am-node" data-node="cli"><strong>CLI</strong><span>简写命令与 <code>gui</code></span></div>
+<div class="am-node" data-node="sdk"><strong>Python SDK</strong><span>同步、异步、PTC</span></div>
+</div>
+<div class="am-bus" data-node="daemon">每个桌面一个守护进程，为 CLI 和 SDK 提供共享 ref 与单一输入锁。MCP 通过 <code>--attach</code> 接入。</div>
+</div>
+<div class="am-row">
+<span class="am-label">核心<small>单一 Go 二进制文件</small></span>
+<div class="am-core">
+<div class="am-node" data-node="contract"><strong>接口约定</strong><span>Schema、强类型错误</span></div>
+<div class="am-node" data-node="state"><strong>状态</strong><span>ref 与 GUI 帧</span></div>
+<div class="am-node" data-node="guards"><strong>校验</strong><span>目标检查与布局检查</span></div>
+<div class="am-node is-ax" data-node="ax"><strong>AX 引擎</strong><span>批次、等待、效果</span></div>
+<div class="am-node is-gui" data-node="gui"><strong>GUI 引擎</strong><span>截图、放大、输入</span></div>
+</div>
+</div>
+<div class="am-row">
+<span class="am-label">平台后端<small>每个操作系统构建一个</small></span>
+<div class="am-cells am-3">
+<div class="am-node am-os" data-node="linux"><svg aria-hidden="true" class="os-icon"><use href="#i-linux"></use></svg><div><strong>Linux</strong><span>AT-SPI2, X11, XTest · Python</span></div></div>
+<div class="am-node am-os" data-node="macos"><svg aria-hidden="true" class="os-icon"><use href="#i-apple"></use></svg><div><strong>macOS</strong><span>AXUIElement, CoreGraphics, ScreenCaptureKit · Swift</span></div></div>
+<div class="am-node am-os" data-node="windows"><svg aria-hidden="true" class="os-icon"><use href="#i-windows"></use></svg><div><strong>Windows</strong><span>UIA3, Win32 · C#</span></div></div>
+</div>
+</div>
+<div class="am-row">
+<span class="am-label">桌面</span>
+<div class="am-desktop" data-node="desktop">智能体专属计算机上的应用与窗口</div>
+</div>
+</div>
+<div class="trace-panel">
+<div class="trace-intro">
+<h3>跟踪一次调用</h3>
+<p id="trace-task">点击 Save，然后等待对话框关闭。</p>
+</div>
+<div class="trace-controls">
+<div aria-label="调用方式" class="seg" role="group">
+<button aria-pressed="true" data-trace-entry="mcp" type="button">MCP</button>
+<button aria-pressed="false" data-trace-entry="cli" type="button">CLI</button>
+<button aria-pressed="false" data-trace-entry="sdk" type="button">Python SDK</button>
+</div>
+<div aria-label="工具" class="seg" role="group">
+<button aria-pressed="true" data-trace-tool="ax" type="button">AX</button>
+<button aria-pressed="false" data-trace-tool="gui" type="button">GUI</button>
+</div>
+<div aria-label="调用前的桌面" class="seg" role="group">
+<button aria-pressed="true" data-trace-case="ok" type="button">未改变</button>
+<button aria-pressed="false" data-trace-case="stale" type="button">已改变</button>
+</div>
+</div>
+<ol aria-live="polite" class="trace" id="trace"></ol>
+</div>
+</div>
+<div class="subagent-block">
+<div>
+<h3>一台计算机，多个显示器</h3>
+<p>通用智能体可以在同一台主机上启动多个子智能体。每个子智能体有自己的虚拟显示器和 HCU 实例。各子智能体通过文件系统共享结果。</p>
+<p>以下截图来自一次录制的发版评审：4 个子智能体在同一台 Linux 主机上同时工作。</p>
+</div>
+<div class="subagents">
+<figure><img alt="子智能体在 LibreOffice Impress 中检查幻灯片" data-full="static/imgs/subagent-1.webp?v=6ae343fd" height="360" loading="lazy" src="static/imgs/subagent-1-thumb.webp?v=6ae3441b" width="640"/><figcaption><strong>营销演示稿</strong>Impress</figcaption></figure>
+<figure><img alt="子智能体在 LibreOffice Calc 中分析收入表格" data-full="static/imgs/subagent-2.webp?v=6ae343fd" height="360" loading="lazy" src="static/imgs/subagent-2-thumb.webp?v=6ae3441b" width="640"/><figcaption><strong>收入模型</strong>Calc</figcaption></figure>
+<figure><img alt="子智能体在 LibreOffice Writer 中起草备忘录" data-full="static/imgs/subagent-3.webp?v=6ae343fd" height="360" loading="lazy" src="static/imgs/subagent-3-thumb.webp?v=6ae3441b" width="640"/><figcaption><strong>上线决策备忘录</strong>Writer</figcaption></figure>
+<figure><img alt="子智能体在 Chrome 中检查发布微站" data-full="static/imgs/subagent-4.webp?v=6ae343fd" height="360" loading="lazy" src="static/imgs/subagent-4-thumb.webp?v=6ae3441b" width="640"/><figcaption><strong>发布微站</strong>Chrome</figcaption></figure>
+</div>
+</div>
+</div>
+</section>
+<!-- Outlook -->
+<section class="section section-alt" id="outlook">
+<div class="container">
+<div class="section-head">
+<h2>从单步动作到代码执行</h2>
+<p>GUI 和 AX 控制都从模型每轮只发一个动作演进到批量执行。下一步是把两条路线合进同一个程序。</p>
+</div>
+<div aria-label="Computer Use 接口的演进" class="evo" role="table">
+<div class="evo-corner" role="columnheader"></div>
+<div class="evo-stage" role="columnheader"><span>1</span>单步动作</div>
+<div class="evo-stage is-now" role="columnheader"><span>2</span>批量动作<em>当前 HCU</em></div>
+<div class="evo-stage" role="columnheader"><span>3</span>代码执行<em class="is-next">展望</em></div>
+<div class="evo-line is-gui" role="rowheader">GUI</div>
+<div class="evo-cell is-gui" data-stage="阶段 1 · 单步动作" role="cell">
+<p>模型每轮点击一次。每次点击后，向模型返回一张新截图。</p>
+<pre class="code">click(812, 455)
+# new screenshot</pre>
+<span class="evo-who">截图智能体</span>
+</div>
+<div class="evo-cell is-gui is-now" data-stage="阶段 2 · 批量动作" role="cell">
+<p>一次调用包含指针与按键动作，结束时返回一张截图。</p>
+<pre class="code">GUI(actions=[
+  click, type, keypress])
+# one screenshot at the end</pre>
+<span class="evo-who">OpenAI 与 Anthropic 计算机工具、HCU GUI 工具</span>
+</div>
+<div class="evo-cell evo-unified" data-stage="阶段 3 · 代码执行" role="cell">
+<p><strong>GUI、AX 与普通代码写在同一个程序里。</strong>AX 状态变成变量，可以直接用来循环和分支。pyautogui 截的图留在程序里，只有结果返回给模型。</p>
+<pre class="code">import pyautogui as gui
+from pytesseract import image_to_string as ocr
+
+def receipt_total(row):         # reused per row
+    # GUI: the pixels stay in the program
+    gui.doubleClick(row.thumb.center)
+    img = gui.screenshot(region=ax.bounds("w2"))
+    gui.press("esc")
+    return money(ocr(img))
+
+for row in ax.rows("w1", status="Pending"):
+    claimed = money(row.text)   # AX: text
+    match = receipt_total(row) == claimed
+    name = "Approve" if match else "Flag"
+    ax.click(row.button(name))  # AX: by ref
+
+assert not ax.rows("w1", status="Pending")
+print(ax.diff("w1"))  # 11 approved, 3 flagged</pre>
+<span class="evo-who">OpenAI 建议 GPT-6 Astra 使用代码执行；HCU Python SDK 是下一步</span>
+</div>
+<div class="evo-line is-ax" role="rowheader">AX</div>
+<div class="evo-cell is-ax" data-stage="阶段 1 · 单步动作" role="cell">
+<p>每次调用执行一个 AX 动作，然后智能体重新读取窗口。</p>
+<pre class="code">press("#12")
+# read the window again</pre>
+<span class="evo-who">CUA Driver、Codex Computer Use</span>
+</div>
+<div class="evo-cell is-ax is-now" data-stage="阶段 2 · 批量动作" role="cell">
+<p>短 ref、带等待的有序批次，返回 diff 而不是整棵新树。</p>
+<pre class="code">AX(mode="act", actions=[
+  {"type":"click","ref":"r19"},
+  {"type":"wait","window":"Save",
+   "gone":true}])
+# only a diff comes back</pre>
+<span class="evo-who">HCU AX 工具</span>
+</div>
+<div class="evo-line is-turns" role="rowheader">开销</div>
+<div class="evo-cost" data-claims="14" role="cell">
+<div class="evo-cost-head">
+<span>同一个报销审核任务。时间只计等待模型的部分，按每轮约 7 秒估算。</span>
+<div aria-label="报销笔数" class="seg" role="group">
+<button aria-pressed="true" data-claims="14" type="button">14 笔</button>
+<button aria-pressed="false" data-claims="140" type="button">140 笔</button>
+</div>
+</div>
+<div class="evo-turn">
+<p><b data-a="~50" data-b="~500">~50</b> 轮</p>
+<span aria-hidden="true" class="turns-bar" data-a="50" data-b="500"><i></i></span>
+<small><b data-a="~50" data-b="~500">~50</b> 张整屏截图 · <b data-a="~6" data-b="~58">~6</b> 分钟</small>
+</div>
+<div class="evo-turn is-now">
+<p><b data-a="~16" data-b="~142">~16</b> 轮</p>
+<span aria-hidden="true" class="turns-bar" data-a="16" data-b="142"><i></i></span>
+<small><b data-a="14" data-b="140">14</b> 张收据裁图 · <b data-a="~2" data-b="~17">~2</b> 分钟</small>
+</div>
+<div class="evo-turn is-next">
+<p><b>1</b> 轮</p>
+<span aria-hidden="true" class="turns-bar" data-a="1" data-b="1"><i></i></span>
+<small><b>0</b> 张图片，只读一行输出 · <b>~7</b> 秒</small>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Citation -->
+<section class="section" id="citation">
+<div class="container">
+<div class="section-head" style="margin-bottom:28px">
+<h2>BibTeX</h2>
+</div>
+<div class="bibtex">
+<button class="btn" id="copy-bibtex" type="button"><svg><use href="#i-copy"></use></svg><span>复制</span></button>
+<pre class="code" id="bibtex-code">@article{wang2026hcu,
+  title  = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
+  author = {Wang, Haoqing and Zhang, Xiaoyi and Fan, Sicheng and Zhang, Zhexin and Zhang, Xinjie and Li, Jiahao and Li, Bin and Lu, Yan},
+  year   = {2026},
+  note   = {Preprint}
+}</pre>
+</div>
+</div>
+</section>
+</main>
+<footer class="footer">
+<div class="container">
+<span>Hybrid Computer Use · Microsoft Research、复旦大学、清华大学</span>
+<nav aria-label="页脚">
+<a href="https://github.com/microsoft/Hybrid-Computer-Use" rel="noopener" target="_blank">GitHub</a>
+<a href="assets/Hybrid-Computer-Use.pdf" rel="noopener" target="_blank">论文</a>
+<a href="llms.txt">llms.txt</a>
+</nav>
+</div>
+</footer>
+<dialog aria-labelledby="viewer-title" class="viewer" id="viewer">
+<div class="viewer-bar">
+<span id="viewer-title"></span>
+<button aria-label="关闭" class="btn btn-icon btn-subtle" id="viewer-close" type="button"><svg><use href="#i-close"></use></svg></button>
+</div>
+<img alt="" id="viewer-img"/>
+</dialog>
+</body>
+</html>

@@ -1,0 +1,37 @@
+# Hybrid Computer Use (HCU)
+
+> Hybrid Computer Use is an open-source MCP server, `computer-use`, that lets general AI agents such as Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and Windows desktops through three channels: code and command-line tools, accessibility (AX), and the GUI. Paper: "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents" (Microsoft Research, Fudan University, Tsinghua University, 2026).
+
+Authors: Haoqing Wang, Xiaoyi Zhang, Sicheng Fan, Zhexin Zhang, Xinjie Zhang, Jiahao Li, Bin Li, Yan Lu.
+
+How it works:
+
+- Two MCP tools, `AX` and `GUI`, run beside the agent's own shell and file tools. The model picks a channel at each step.
+- `AX` returns a compact accessibility working tree with short refs (`a1` app, `w1` window, `r12` control). A ref stays bound to one window and fails as stale instead of rebinding.
+- `AX act` runs up to 64 ordered actions in one call, with in-call waits, and returns a diff of the tree instead of a new tree.
+- `GUI` takes full-desktop screenshots, zooms into regions, and sends batched pointer and keyboard input.
+- Guards check the live target of each AX action and the live window layout of each GUI coordinate before input. A GUI batch planned on a stale screenshot sends nothing and returns a fresh screenshot.
+- One Go core drives native providers: AT-SPI2 and X11 on Linux, AXUIElement and ScreenCaptureKit on macOS, UI Automation and Win32 on Windows. A CLI and a Python SDK share one daemon per desktop.
+
+Results (same model, harness, tasks, and step budget; only the computer-use interface changes; baseline CUA Driver):
+
+- OSWorld 2.0, 108 tasks: 72.37% Partial with GPT-6 Astra (CUA Driver 68.82%); 35.19% Binary with Claude Opus 5, the highest of all full-set systems, at 20.3% lower cost than the official GUI loop.
+- OSWorld 1.0, 360 tasks, GPT-5.4: 70.13% (CUA Driver 62.47%), 38.6% fewer steps, 59.1% lower cost.
+- OSWorld 1.0 across GPT-5.4, Claude Opus 5.5, Gemini 3.8 Flash, and Grok 4.7: +6.48 points mean score, 22% fewer tool calls, 30% lower cost.
+- Windows Agent Arena, 111 tasks, GPT-5.4: 80.86% (CUA Driver 71.89%), 50.6% lower total cost.
+- MacAgentBench UI subset, 28 tasks, GPT-5.4: 25 of 28 completed (CUA Driver 24), 51.4% lower cost.
+- WeaveBench, 114 long tasks, GPT-5.4: 53.25% (CUA Driver 46.37%, OpenClaw 43.84%), 46.3% lower cost than CUA Driver.
+
+## Pages
+
+- [Full page text with all result tables](llms-full.txt)
+- [Project page](index.html)
+- [Project page in Chinese](zh.html)
+- [Paper PDF](assets/Hybrid-Computer-Use.pdf)
+
+## Code and docs
+
+- [Source code](https://github.com/microsoft/Hybrid-Computer-Use): MIT license
+- [Documentation guide](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/README.md)
+- [Computer Use MCP: setup and the AX and GUI contract](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/MCP.md)
+- [Repository llms.txt](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/llms.txt)
