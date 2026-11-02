@@ -24,6 +24,8 @@ keywords = [
   "ai-agents",
   "codex",
   "claude-code",
+  "gemini-cli",
+  "gui-agent",
   "osworld",
 ]
 classifiers = [

@@ -1,4 +1,4 @@
-# Native Platforms
+# Native Platforms: Linux (AT-SPI2), macOS (AXUIElement), Windows (UI Automation)
 
 The public MCP surface is always `AX` and `GUI`. The binary selects its
 backend at compile time; an unsupported OS fails explicitly. No platform

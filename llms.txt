@@ -22,9 +22,19 @@ Results reported in the paper (same model, harness, tasks and step budget; only 
 - WeaveBench, 114 tasks, GPT-5.4: 53.25% vs 46.37%, 46.3% lower cost.
 - OSWorld 1.0 across GPT-5.4, Claude Opus 5.5, Gemini 3.8 Flash and Grok 4.7: +6.48 points mean score, 17% fewer Steps, 30% lower cost.
 
+## Quick start
+
+- Build: `make build-local` (Linux, Go 1.22+), `make build-macos` (Swift 6.2+), `make build-windows` (.NET 8, PowerShell 7). Run `artifacts/computer-use doctor` as the signed-in desktop user.
+- Codex: add `[mcp_servers.computer_use]` with `command = "/abs/path/to/artifacts/computer-use"` and `args = ["mcp"]` to `~/.codex/config.toml`.
+- Claude Code, Gemini CLI, Grok Build: `python3 -m hcu.render_agent_config` writes complete configurations.
+- Shell and Python: the `computer-use` CLI and the `hcu_sdk` Python package share one daemon per desktop.
+- HCU sends real input to the signed-in desktop. Use a dedicated desktop or a disposable VM for untrusted tasks.
+
 ## Docs
 
 - [Project page](https://microsoft.github.io/Hybrid-Computer-Use/)
+- [Project page as Markdown with all result tables](https://microsoft.github.io/Hybrid-Computer-Use/llms-full.txt)
+- [Project page in Chinese](https://microsoft.github.io/Hybrid-Computer-Use/zh.html)
 - [Paper (PDF)](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/paper/Hybrid-Computer-Use.pdf): "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents", 2026
 - [README](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/README.md): overview, results, quick start, FAQ, citation
 - [Documentation guide](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/README.md): reading paths and terms

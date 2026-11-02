@@ -23,11 +23,13 @@
   <img src="docs/assets/hcu-channels.svg" width="820" alt="An agent operates a computer through three channels: semantic AX, visual GUI, and programmatic code or CLI. The animation switches between the channels." />
 </p>
 
-**Hybrid Computer Use (HCU)** is an open-source MCP server, `computer-use`,
-that lets coding agents such as Codex, Claude Code, Gemini CLI, and Grok Build
-operate Linux, macOS, and Windows desktops. It adds two tools, `AX` and `GUI`,
-next to the agent's own shell and file tools, so the agent picks the right
-channel at each step:
+**Hybrid Computer Use (HCU)** is an open-source Model Context Protocol (MCP)
+server, `computer-use`, for computer-use agents. It lets coding agents such as
+Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and
+Windows desktops through the accessibility tree (AT-SPI2, AXUIElement, UI
+Automation), screenshots, and pointer and keyboard input. It adds two tools,
+`AX` and `GUI`, next to the agent's own shell and file tools, so the agent
+picks the right channel at each step:
 
 | Channel | Tool | What the agent does with it |
 | --- | --- | --- |
@@ -175,7 +177,7 @@ See [Code entry points](docs/CODE.md) for async use and programmatic tool callin
 | --- | --- | --- |
 | Linux (X11) | Python, embedded in the binary: AT-SPI2, X11, XTest | OSWorld 1.0 and 2.0, WeaveBench |
 | macOS 14+ | Swift: AXUIElement, CoreGraphics, ScreenCaptureKit | MacAgentBench |
-| Windows 10/11 | C# .NET 8: FlaUI UIA3, Win32 | Windows Agent Arena |
+| Windows 10/11 | C# .NET 8: UI Automation (FlaUI UIA3), Win32 | Windows Agent Arena |
 
 ## Documentation
 
@@ -217,7 +219,7 @@ Those drivers also act through the accessibility tree, but one action per call
 and in the background of a shared desktop. HCU targets a desktop the agent
 has to itself: it batches actions with in-call waits, returns diffs, and checks
 the live target and layout before input. With the same model and harness, HCU
-scores higher at lower cost (see [Results](#results)).
+scores higher than CUA Driver at lower cost (see [Results](#results)).
 </details>
 
 <details>
@@ -226,6 +228,25 @@ scores higher at lower cost (see [Results](#results)).
 Any MCP client can use it. The repository ships configurations for Codex,
 Claude Code, Gemini CLI, and Grok Build. Providers exist for Linux (X11),
 macOS 14+, and Windows 10/11.
+</details>
+
+<details>
+<summary><b>Can I use HCU for desktop automation without an MCP client?</b></summary>
+
+Yes. The `computer-use` command line and the `hcu_sdk` Python package share
+one daemon per desktop, so refs carry over between them. See
+[Code entry points](docs/CODE.md) for async use and programmatic tool calling.
+</details>
+
+<details>
+<summary><b>How does HCU relate to UFO2, CoAct-1, StateAct, and Agent S2?</b></summary>
+
+Agent S2 routes GUI localization to specialist models. CoAct-1 and StateAct
+build multi-agent systems that hand GUI work to a dedicated GUI operator or
+subagent. UFO2 combines UI Automation and visual control detection with GUI
+and application-API execution. HCU instead adds two tools, `AX` and `GUI`, to
+one general agent and leaves the choice of channel to the model. See Section 2
+of the [paper](paper/Hybrid-Computer-Use.pdf).
 </details>
 
 <details>

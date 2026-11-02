@@ -39,25 +39,34 @@ authors:
     family-names: Lu
     affiliation: Microsoft Research
 version: 1.0.0
+date-released: 2026-10-30
 license:
   - MIT
   - Apache-2.0
 repository-code: "https://github.com/microsoft/Hybrid-Computer-Use"
 url: "https://microsoft.github.io/Hybrid-Computer-Use/"
 keywords:
+  - Hybrid Computer Use
+  - HCU
   - computer use
   - computer-use agent
   - GUI agent
   - desktop automation
   - accessibility
+  - accessibility tree
   - AT-SPI
+  - AXUIElement
   - UI Automation
   - MCP
   - Model Context Protocol
   - Codex
   - Claude Code
+  - Gemini CLI
+  - Grok Build
   - OSWorld
   - Windows Agent Arena
+  - MacAgentBench
+  - WeaveBench
 preferred-citation:
   type: article
   title: "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents"

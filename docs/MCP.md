@@ -1,4 +1,4 @@
-# Computer Use MCP
+# Computer Use MCP Server
 
 `computer-use` is a stdio MCP server that controls an already-running
 desktop. This page covers building it, running it, configuring Codex and
