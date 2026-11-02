@@ -100,10 +100,22 @@ def main():
     soup.find('meta', property='og:locale:alternate')['content'] = 'en_US'
     ld = soup.find('script', type='application/ld+json')
     graph = json.loads(ld.string)
+    text = lambda tag: norm(tag.get_text())
     for node in graph['@graph']:
         if node['@type'] == 'WebPage':
             node['inLanguage'] = 'zh-CN'
             node['description'] = attrs.get(node['description'], node['description'])
+            node['@id'], node['url'] = zh_url + '#webpage', zh_url
+        elif node['@type'] == 'FAQPage':
+            # The questions and answers come from the translated FAQ on this page.
+            faq = soup.select_one('#faq')
+            node['@id'], node['inLanguage'] = zh_url + '#faq', 'zh-CN'
+            node['mainEntity'] = [{'@type': 'Question', 'name': text(h3),
+                                   'acceptedAnswer': {'@type': 'Answer', 'text': text(h3.find_next_sibling('p'))}}
+                                  for h3 in faq.find_all('h3')]
+    # Google Scholar should index one version of the paper: the English page.
+    for meta in soup.find_all('meta', attrs={'name': re.compile(r'^citation_')}):
+        meta.decompose()
     ld.string = '\n  ' + json.dumps(graph, ensure_ascii=False, indent=2).replace('\n', '\n  ') + '\n  '
     switch = soup.select_one('.lang-switch')
     switch['href'], switch['hreflang'], switch['lang'] = './', 'en', 'en'

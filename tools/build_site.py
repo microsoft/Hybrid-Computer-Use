@@ -183,15 +183,29 @@ def write_llms_full(url):
     head = [
         '# Hybrid Computer Use (HCU): full page text',
         '',
-        '> The project page of Hybrid Computer Use as Markdown, with every result table.'
-        ' The interactive page is index.html; the Chinese version is zh.html.'
-        ' Code: https://github.com/microsoft/Hybrid-Computer-Use. Paper: assets/Hybrid-Computer-Use.pdf.',
+        '> Hybrid Computer Use (HCU) is an open-source MCP server, computer-use, from Microsoft Research that lets'
+        ' general AI agents such as Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and Windows'
+        ' desktops through code, accessibility (AX), and the GUI. This file is the project page as Markdown with every'
+        ' result table; the interactive page is index.html and the Chinese version is zh.html.'
+        ' Paper: https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf.'
+        ' Code (MIT License): https://github.com/microsoft/Hybrid-Computer-Use.',
         '',
         '',
     ]
     body = markdown(render(url))
     (ROOT / 'llms-full.txt').write_text('\n'.join(head) + body + '\n')
     print(f'llms-full.txt written ({len(body.split())} words)')
+
+
+def changed(rel):
+    """Date the file last changed: today if it has uncommitted edits, else its last commit."""
+    rel = 'index.html' if rel == './' else rel
+    git = lambda *a: subprocess.run(['git', *a, '--', rel], cwd=ROOT, capture_output=True, text=True)
+    if git('diff', '--quiet', 'HEAD').returncode == 0:
+        date = git('log', '-1', '--format=%cs').stdout.strip()
+        if date:
+            return date
+    return datetime.date.today().isoformat()
 
 
 def apply_site_url(site):
@@ -207,19 +221,23 @@ def apply_site_url(site):
                     r'(<link rel="alternate" hreflang="[^"]+" href=")([^"]*)(")',
                     r'(<meta property="og:(?:url|image)" content=")([^"]*)(")',
                     r'(<meta name="twitter:image" content=")([^"]*)(")',
-                    r'(<meta name="citation_pdf_url" content=")([^"]*)(")',
-                    r'("(?:contentUrl|image|primaryImageOfPage)": ")([^"]*)(")'):
+                    r'(<meta name="citation_(?:pdf|abstract_html)_url" content=")([^"]*)(")',
+                    r'("(?:contentUrl|image|primaryImageOfPage|@id|url)": ")([^"]*)(")'):
         html = re.sub(pattern, lambda m: m[1] + absolute(m[2]) + m[3], html)
     path.write_text(html)
 
-    today = datetime.date.today().isoformat()
+
+def write_sitemap(site):
+    """Write sitemap.xml and the Sitemap line of robots.txt; run after zh.html is built."""
+    absolute = lambda rel: urljoin(site, rel)
     en, zh = absolute('./'), absolute('zh.html')
     alternates = (f'<xhtml:link rel="alternate" hreflang="en" href="{en}"/>'
                   f'<xhtml:link rel="alternate" hreflang="zh-CN" href="{zh}"/>'
                   f'<xhtml:link rel="alternate" hreflang="x-default" href="{en}"/>')
-    urls = ''.join(f'  <url><loc>{u}</loc><lastmod>{today}</lastmod>{alternates}</url>\n'
-                   for u in (en, zh))
-    urls += f'  <url><loc>{absolute("assets/Hybrid-Computer-Use.pdf")}</loc><lastmod>{today}</lastmod></url>\n'
+    urls = ''.join(f'  <url><loc>{absolute(f)}</loc><lastmod>{changed(f)}</lastmod>{alternates}</url>\n'
+                   for f in ('./', 'zh.html'))
+    pdf = 'assets/Hybrid-Computer-Use.pdf'
+    urls += f'  <url><loc>{absolute(pdf)}</loc><lastmod>{changed(pdf)}</lastmod></url>\n'
     (ROOT / 'sitemap.xml').write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
@@ -227,7 +245,7 @@ def apply_site_url(site):
     robots = ROOT / 'robots.txt'
     lines = [l for l in robots.read_text().splitlines() if not l.startswith('Sitemap:')]
     robots.write_text('\n'.join(lines).rstrip() + f'\n\nSitemap: {absolute("sitemap.xml")}\n')
-    print(f'absolute URLs set to {site}; sitemap.xml and robots.txt written')
+    print(f'sitemap.xml and robots.txt written for {site}')
 
 
 def main():
@@ -235,10 +253,13 @@ def main():
     parser.add_argument('--site-url', help='public URL of the directory that holds index.html')
     args = parser.parse_args()
     stamp('index.html')
-    if args.site_url:
-        apply_site_url(args.site_url if args.site_url.endswith('/') else args.site_url + '/')
+    site = args.site_url and (args.site_url if args.site_url.endswith('/') else args.site_url + '/')
+    if site:
+        apply_site_url(site)
     subprocess.run([sys.executable, str(ROOT / 'i18n/build_zh.py')], check=True, cwd=ROOT)
     stamp('zh.html')
+    if site:
+        write_sitemap(site)
 
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *args):

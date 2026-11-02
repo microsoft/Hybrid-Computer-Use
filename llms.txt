@@ -17,21 +17,27 @@ Results (same model, harness, tasks, and step budget; only the computer-use inte
 
 - OSWorld 2.0, 108 tasks: 72.37% Partial with GPT-6 Astra (CUA Driver 68.82%); 35.19% Binary with Claude Opus 5, the highest of all full-set systems, at 20.3% lower cost than the official GUI loop.
 - OSWorld 1.0, 360 tasks, GPT-5.4: 70.13% (CUA Driver 62.47%), 38.6% fewer steps, 59.1% lower cost.
-- OSWorld 1.0 across GPT-5.4, Claude Opus 5.5, Gemini 3.8 Flash, and Grok 4.7: +6.48 points mean score, 22% fewer tool calls, 30% lower cost.
+- OSWorld 1.0 across GPT-5.4, Claude Opus 5.5, Gemini 3.8 Flash, and Grok 4.7: +6.48 points mean score, 17% fewer steps, 30% lower cost.
 - Windows Agent Arena, 111 tasks, GPT-5.4: 80.86% (CUA Driver 71.89%), 50.6% lower total cost.
 - MacAgentBench UI subset, 28 tasks, GPT-5.4: 25 of 28 completed (CUA Driver 24), 51.4% lower cost.
 - WeaveBench, 114 long tasks, GPT-5.4: 53.25% (CUA Driver 46.37%, OpenClaw 43.84%), 46.3% lower cost than CUA Driver.
 
 ## Pages
 
-- [Full page text with all result tables](llms-full.txt)
-- [Project page](index.html)
-- [Project page in Chinese](zh.html)
-- [Paper PDF](assets/Hybrid-Computer-Use.pdf)
+- [Full page text with all result tables](https://microsoft.github.io/Hybrid-Computer-Use/llms-full.txt)
+- [Project page](https://microsoft.github.io/Hybrid-Computer-Use/)
+- [FAQ](https://microsoft.github.io/Hybrid-Computer-Use/#faq): what HCU is, supported agents and systems, comparison with screenshot loops, CUA Driver, and related systems
+- [Project page in Chinese](https://microsoft.github.io/Hybrid-Computer-Use/zh.html)
+- [Paper PDF](https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf)
 
 ## Code and docs
 
 - [Source code](https://github.com/microsoft/Hybrid-Computer-Use): MIT license
 - [Documentation guide](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/README.md)
 - [Computer Use MCP: setup and the AX and GUI contract](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/MCP.md)
-- [Repository llms.txt](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/llms.txt)
+- [Repository llms.txt](https://raw.githubusercontent.com/microsoft/Hybrid-Computer-Use/main/llms.txt)
+
+## Optional
+
+- [CITATION.cff](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/CITATION.cff): citation metadata
+- [BibTeX](https://microsoft.github.io/Hybrid-Computer-Use/#citation)

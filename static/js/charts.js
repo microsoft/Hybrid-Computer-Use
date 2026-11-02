@@ -392,7 +392,7 @@
     models: {
       title: 'Same model, same harness, different interface',
       meta: [['linux', 'OSWorld 1.0'], [null, '4 frontier models'], [null, 'Native harnesses']],
-      lead: 'Replacing CUA Driver with HCU raises the mean score by 6.48 points, with 22% fewer tool calls and 30% lower cost on average.',
+      lead: 'Replacing CUA Driver with HCU raises the mean score by 6.48 points, with 17% fewer steps and 30% lower cost on average.',
       left: () => `<section class="chart-card"><header><h4>${esc('Score, CUA Driver to HCU')}</h4><span><i class="key is-base"></i>CUA Driver <i class="key is-ours"></i>HCU</span></header>${dumbbell([
         { label: 'Gemini 3.8 Flash', a: 54.67, b: 67.57, gain: '+12.90' },
         { label: 'Grok 4.7', a: 67.90, b: 74.71, gain: '+6.81' },

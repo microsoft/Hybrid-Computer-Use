@@ -1,6 +1,6 @@
 # Hybrid Computer Use (HCU): full page text
 
-> The project page of Hybrid Computer Use as Markdown, with every result table. The interactive page is index.html; the Chinese version is zh.html. Code: https://github.com/microsoft/Hybrid-Computer-Use. Paper: assets/Hybrid-Computer-Use.pdf.
+> Hybrid Computer Use (HCU) is an open-source MCP server, computer-use, from Microsoft Research that lets general AI agents such as Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and Windows desktops through code, accessibility (AX), and the GUI. This file is the project page as Markdown with every result table; the interactive page is index.html and the Chinese version is zh.html. Paper: https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf. Code (MIT License): https://github.com/microsoft/Hybrid-Computer-Use.
 
 # Hybrid Computer Use
 
@@ -26,7 +26,7 @@ Computer-use agents now run tasks from everyday desktop work to long professiona
 
 We introduce Hybrid Computer Use (HCU). HCU combines three channels in one interface: code and command-line tools, accessibility (AX), and the GUI. HCU is a two-tool MCP server (AX and GUI) that runs beside the agent's own shell and file tools. It returns compact AX working trees with short refs (`aN → wN → rN`), runs batches of actions with in-call waits, reports post-action AX diffs, and checks live state before it sends any desktop input.
 
-On OSWorld 2.0, OSWorld 1.0 (five frontier models, four harnesses), WeaveBench, MacAgentBench, and Windows Agent Arena, HCU raises task scores and lowers cost.
+On OSWorld 2.0, OSWorld 1.0 (four frontier models, four harnesses), WeaveBench, MacAgentBench, and Windows Agent Arena, HCU raises task scores and lowers cost.
 
 ### What HCU adds
 
@@ -157,7 +157,7 @@ A schematic case. An AX action changes the window after the screenshot, so a cli
 
 ## What the model reads
 
-Real AX captures from 9 applications. Hover a box on the screenshot or a line in the tree. Both point to the same control and the same ref.
+Real AX captures from 8 applications. Hover a box on the screenshot or a line in the tree. Both point to the same control and the same ref.
 
 Chrome site settings
 
@@ -264,7 +264,7 @@ All numbers
 
 ### Same model, same harness, different interface
 
-Replacing CUA Driver with HCU raises the mean score by 6.48 points, with 22% fewer tool calls and 30% lower cost on average.
+Replacing CUA Driver with HCU raises the mean score by 6.48 points, with 17% fewer steps and 30% lower cost on average.
 
 ## Where the gains come from
 
@@ -496,3 +496,37 @@ One expense review. Time counts only model waiting, at about 7 s per turn.
   year    = {2026}
 }
 ```
+
+FAQ
+
+### What is Hybrid Computer Use (HCU)?
+
+Hybrid Computer Use (HCU) is an open-source computer-use MCP server, `computer-use`, from Microsoft Research, released under the MIT License. It adds two tools next to a coding agent's own shell and file tools: `AX` reads and acts on the accessibility tree, and `GUI` works with screenshots and pointer and keyboard input. One agent can then mix code, accessibility, and pixels in a single desktop task.
+
+### Does it work with Codex, Claude Code, Gemini CLI, and Grok Build?
+
+Any MCP client can use it. The repository ships configurations for Codex, Claude Code, Gemini CLI, and Grok Build, and `python3 -m hcu.render_agent_config` writes them. HCU sends real input to the signed-in desktop, so use a dedicated desktop or a disposable VM for untrusted tasks.
+
+### Which operating systems and accessibility APIs does it support?
+
+Linux (X11) through AT-SPI2, X11, and XTest; macOS 14+ through AXUIElement, CoreGraphics, and ScreenCaptureKit; Windows 10/11 through UI Automation (FlaUI UIA3) and Win32. One Go core gives the model the same `AX` and `GUI` tools on every platform.
+
+### How is HCU different from a screenshot-only computer-use loop?
+
+A screenshot loop sends a full image at every step and acts only through pixels. HCU lets the agent act on named controls by ref, batch up to 64 actions in one call, read back only a diff, and use screenshots only when pixels matter.
+
+### How does HCU compare with CUA Driver and Codex Computer Use?
+
+Those drivers also act through the accessibility tree, but one action per call and in the background of a shared desktop. HCU targets a desktop the agent has to itself: it batches actions with in-call waits, returns diffs, and checks the live target and layout before input. With the same model and harness, HCU scores higher than CUA Driver at lower cost.
+
+### How does HCU relate to UFO2, CoAct-1, StateAct, and Agent S2?
+
+Agent S2 routes GUI localization to specialist models. CoAct-1 and StateAct build multi-agent systems that hand GUI work to a dedicated GUI operator or subagent. UFO2 combines UI Automation and visual control detection with GUI and application-API execution. HCU instead adds two tools, AX and GUI, to one general agent and leaves the choice of channel to the model.
+
+### Can I use it from the command line or Python without MCP?
+
+Yes. The `computer-use` command line and the Python SDK use the same core as the MCP server and share one daemon per desktop. Python code can also call HCU through programmatic tool calling.
+
+### How do I reproduce the OSWorld results?
+
+Follow [Running OSWorld](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/OSWORLD.md) in the repository. Each task runs in a fresh Docker/QEMU guest with one agent and one MCP process, and the official evaluator scores the result.

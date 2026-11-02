@@ -1306,3 +1306,13 @@ strong { color: var(--ink); font-weight: 600; }
   .tok-delta { padding: 12px 0 0; border-left: 0; border-top: 1px solid var(--line); }
   .result-lead h3 { font-size: 21px; }
   .demo-body, }
+
+/* FAQ: one muted, collapsed line under the BibTeX block. */
+.faq { max-width: 860px; margin: 24px auto 0; color: var(--muted); font-size: 14px; }
+.faq summary { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-weight: 600; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::before { content: ""; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s var(--ease); }
+.faq[open] summary::before { transform: rotate(45deg); }
+.faq summary:hover { color: var(--brand); }
+.faq h3 { margin-top: 18px; color: var(--ink); font-size: 15px; font-weight: 600; }
+.faq p { margin-top: 6px; line-height: 1.6; }

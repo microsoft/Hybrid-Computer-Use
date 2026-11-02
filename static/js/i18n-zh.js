@@ -206,7 +206,7 @@ window.HCU_I18N = {
 "Python code sends the call to the same daemon.": "Python 代码把调用发给同一个守护进程。",
 "Raw AX tree": "原始 AX 树",
 "Real-time priority on": "开启实时优先级",
-"Replacing CUA Driver with HCU raises the mean score by 6.48 points, with 22% fewer tool calls and 30% lower cost on average.": "把 CUA Driver 换成 HCU 后，平均得分提高 6.48 个百分点，工具调用平均减少 22%，成本平均降低 30%。",
+"Replacing CUA Driver with HCU raises the mean score by 6.48 points, with 17% fewer steps and 30% lower cost on average.": "把 CUA Driver 换成 HCU 后，平均得分提高 6.48 个百分点，步数平均减少 17%，成本平均降低 30%。",
 "Replay": "重新播放",
 "Result": "结果",
 "Ribbon actions, vault file tree, and markdown research note": "侧边工具栏动作、知识库文件树和 Markdown 研究笔记",
