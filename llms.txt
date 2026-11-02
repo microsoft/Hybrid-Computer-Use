@@ -4,6 +4,7 @@
 
 Key facts:
 
+- Paper: arXiv:2610.41432 [cs.HC], 30 October 2026, DOI 10.48550/arXiv.2610.41432. Authors: Haoqing Wang, Xiaoyi Zhang, Sicheng Fan, Zhexin Zhang, Xinjie Zhang, Jiahao Li, Bin Li, Yan Lu (Microsoft Research, Fudan University, Tsinghua University).
 - Public MCP tools: exactly two, `AX` and `GUI`. Transport: stdio, newline-delimited JSON-RPC.
 - `AX` modes: `apps`, `observe`, `find`, `act`. The server names applications, windows and controls with short refs (`a1` -> `w1` -> `r12`). A ref stays bound to one window and fails as stale instead of rebinding.
 - `AX act` runs up to 64 ordered steps in one call, including `wait` steps (window, query, ref value or state, text, settle), and returns a compact diff of the accessibility tree.
@@ -35,7 +36,7 @@ Results reported in the paper (same model, harness, tasks and step budget; only 
 - [Project page](https://microsoft.github.io/Hybrid-Computer-Use/)
 - [Project page as Markdown with all result tables](https://microsoft.github.io/Hybrid-Computer-Use/llms-full.txt)
 - [Project page in Chinese](https://microsoft.github.io/Hybrid-Computer-Use/zh.html)
-- [Paper (PDF)](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/paper/Hybrid-Computer-Use.pdf): "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents", 2026
+- [Paper (arXiv:2610.41432)](https://arxiv.org/abs/2610.41432): "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents", 2026. A copy of the PDF is in the repository: [paper/Hybrid-Computer-Use.pdf](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/paper/Hybrid-Computer-Use.pdf)
 - [README](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/README.md): overview, results, quick start, FAQ, citation
 - [Documentation guide](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/README.md): reading paths and terms
 - [Computer Use MCP](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/MCP.md): build, desktop runtime, agent configuration, `AX` and `GUI` contract, errors, troubleshooting

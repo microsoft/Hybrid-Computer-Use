@@ -9,13 +9,13 @@
 <sup>1</sup>Microsoft Research &emsp; <sup>2</sup>Fudan University &emsp; <sup>3</sup>Tsinghua University
 
 [![Project Page](https://img.shields.io/badge/%F0%9F%8C%90-Project%20Page-0078D4)](https://microsoft.github.io/Hybrid-Computer-Use/)
-[![Paper](https://img.shields.io/badge/paper-PDF-b31b1b)](paper/Hybrid-Computer-Use.pdf)
+[![arXiv](https://img.shields.io/badge/arXiv-2610.41432-b31b1b)](https://arxiv.org/abs/2610.41432)
 [![CI](https://github.com/microsoft/Hybrid-Computer-Use/actions/workflows/ci.yml/badge.svg)](https://github.com/microsoft/Hybrid-Computer-Use/actions/workflows/ci.yml)
 ![Go 1.22+](https://img.shields.io/badge/go-1.22%2B-00ADD8?logo=go&logoColor=white)
 ![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-[Paper](paper/Hybrid-Computer-Use.pdf) · [Results](#results) · [See it work](#see-it-work) · [How it works](#how-it-works) · [Quick start](#quick-start) · [Docs](docs/README.md) · [Citation](#citation)
+[Paper](https://arxiv.org/abs/2610.41432) · [Results](#results) · [See it work](#see-it-work) · [How it works](#how-it-works) · [Quick start](#quick-start) · [Docs](docs/README.md) · [Citation](#citation)
 
 </div>
 
@@ -246,7 +246,7 @@ build multi-agent systems that hand GUI work to a dedicated GUI operator or
 subagent. UFO2 combines UI Automation and visual control detection with GUI
 and application-API execution. HCU instead adds two tools, `AX` and `GUI`, to
 one general agent and leaves the choice of channel to the model. See Section 2
-of the [paper](paper/Hybrid-Computer-Use.pdf).
+of the [paper](https://arxiv.org/abs/2610.41432).
 </details>
 
 <details>
@@ -259,13 +259,14 @@ evaluator scores the result.
 
 ## Citation
 
-The paper is in [paper/Hybrid-Computer-Use.pdf](paper/Hybrid-Computer-Use.pdf).
+The paper is on arXiv as [2610.41432](https://arxiv.org/abs/2610.41432). A copy of the PDF is in
+[paper/Hybrid-Computer-Use.pdf](paper/Hybrid-Computer-Use.pdf).
 
 ```bibtex
 @article{wang2026hcu,
   title   = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
   author  = {Haoqing Wang and Xiaoyi Zhang and Sicheng Fan and Zhexin Zhang and Xinjie Zhang and Jiahao Li and Bin Li and Yan Lu},
-  journal = {arXiv preprint},
+  journal = {arXiv preprint arXiv:2610.41432},
   year    = {2026}
 }
 ```

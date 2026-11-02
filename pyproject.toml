@@ -54,6 +54,7 @@ test = ["pytest>=8"]
 Homepage = "https://microsoft.github.io/Hybrid-Computer-Use/"
 Documentation = "https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/README.md"
 Source = "https://github.com/microsoft/Hybrid-Computer-Use"
+Paper = "https://arxiv.org/abs/2610.41432"
 Issues = "https://github.com/microsoft/Hybrid-Computer-Use/issues"
 Changelog = "https://github.com/microsoft/Hybrid-Computer-Use/blob/main/CHANGELOG.md"
 
