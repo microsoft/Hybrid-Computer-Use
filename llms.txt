@@ -1,6 +1,6 @@
 # Hybrid Computer Use (HCU)
 
-> Hybrid Computer Use is an open-source MCP server, `computer-use`, that lets general AI agents such as Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and Windows desktops through three channels: code and command-line tools, accessibility (AX), and the GUI. Paper: "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents" (Microsoft Research, Fudan University, Tsinghua University, 2026).
+> Hybrid Computer Use is an open-source MCP server, `computer-use`, that lets general AI agents such as Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and Windows desktops through three channels: code and command-line tools, accessibility (AX), and the GUI. Paper: "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents" (Microsoft Research, Fudan University, Tsinghua University), arXiv:2610.41432 [cs.HC], 30 October 2026, DOI 10.48550/arXiv.2610.41432.
 
 Authors: Haoqing Wang, Xiaoyi Zhang, Sicheng Fan, Zhexin Zhang, Xinjie Zhang, Jiahao Li, Bin Li, Yan Lu.
 
@@ -28,6 +28,7 @@ Results (same model, harness, tasks, and step budget; only the computer-use inte
 - [Project page](https://microsoft.github.io/Hybrid-Computer-Use/)
 - [FAQ](https://microsoft.github.io/Hybrid-Computer-Use/#faq): what HCU is, supported agents and systems, comparison with screenshot loops, CUA Driver, and related systems
 - [Project page in Chinese](https://microsoft.github.io/Hybrid-Computer-Use/zh.html)
+- [Paper on arXiv](https://arxiv.org/abs/2610.41432)
 - [Paper PDF](https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf)
 
 ## Code and docs

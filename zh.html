@@ -43,6 +43,10 @@
 
 
 
+
+
+
+
 <meta content="Hybrid Computer Use" property="og:site_name"/>
 <meta content="Hybrid Computer Use（HCU）：开源 Computer Use MCP 服务器" property="og:title"/>
 <meta content="一个 MCP 服务器，用代码、无障碍接口（AX）和 GUI 操作 Linux、macOS 与 Windows 桌面。" property="og:description"/>
@@ -71,6 +75,20 @@
         "headline": "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents",
         "name": "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents",
         "alternateName": "HCU",
+        "url": "https://arxiv.org/abs/2610.41432",
+        "sameAs": "https://arxiv.org/abs/2610.41432",
+        "identifier": [
+          {
+            "@type": "PropertyValue",
+            "propertyID": "DOI",
+            "value": "10.48550/arXiv.2610.41432"
+          },
+          {
+            "@type": "PropertyValue",
+            "propertyID": "arXiv",
+            "value": "2610.41432"
+          }
+        ],
         "abstract": "Computer-use agents now run tasks from everyday desktop work to long professional workflows. Most agent interfaces use screenshots with mouse and keyboard input, so the model must interpret pixels at every step while the semantic and programmatic interfaces of the computer stay hidden. We introduce Hybrid Computer Use (HCU), which combines code and command-line tools, accessibility (AX), and the GUI in one interface. HCU is a two-tool MCP server (AX and GUI) that runs beside the agent's own shell and file tools. It returns compact AX working trees with short refs, runs batches of actions with in-call waits, reports post-action AX diffs, and checks live state before it sends any desktop input. On OSWorld 2.0, OSWorld 1.0 (four frontier models, four harnesses), WeaveBench, MacAgentBench, and Windows Agent Arena, HCU raises task scores and lowers cost.",
         "author": [
           {
@@ -384,6 +402,14 @@
               "@type": "Answer",
               "text": "按仓库里的 Running OSWorld 操作。每个任务在全新的 Docker/QEMU 客户机中运行，只有一个智能体和一个 MCP 进程，由官方评测器打分。"
             }
+          },
+          {
+            "@type": "Question",
+            "name": "论文在哪里，怎样引用？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "论文是 arXiv:2610.41432 [cs.HC]，2026 年 10 月 30 日提交，DOI 10.48550/arXiv.2610.41432。BibTeX 条目见上方。"
+            }
           }
         ]
       }
@@ -435,7 +461,7 @@
 </nav>
 <div class="nav-actions">
 <a class="btn btn-subtle lang-switch" href="./" hreflang="en" lang="en">EN</a>
-<a class="btn" href="assets/Hybrid-Computer-Use.pdf" rel="noopener" target="_blank"><svg><use href="#i-paper"></use></svg><span>论文</span></a>
+<a class="btn" href="https://arxiv.org/abs/2610.41432" rel="noopener" target="_blank"><svg><use href="#i-paper"></use></svg><span>论文</span></a>
 <a class="btn btn-primary" href="https://github.com/microsoft/Hybrid-Computer-Use" rel="noopener" target="_blank"><svg><use href="#i-github"></use></svg><span>代码</span></a>
 </div>
 </div>
@@ -452,7 +478,7 @@
 <p class="author-note">* 在 Microsoft Research 实习期间完成。† 项目负责人。</p>
 </div>
 <div class="hero-actions">
-<a class="btn btn-primary btn-lg" href="assets/Hybrid-Computer-Use.pdf" rel="noopener" target="_blank"><svg><use href="#i-paper"></use></svg>论文</a>
+<a class="btn btn-primary btn-lg" href="https://arxiv.org/abs/2610.41432" rel="noopener" target="_blank"><svg><use href="#i-paper"></use></svg>论文</a>
 <a class="btn btn-lg" href="https://github.com/microsoft/Hybrid-Computer-Use" rel="noopener" target="_blank"><svg><use href="#i-github"></use></svg>代码</a>
 <a class="btn btn-lg" href="#citation"><svg><use href="#i-quote"></use></svg>BibTeX</a>
 </div>
@@ -1009,7 +1035,7 @@ print(ax.diff("w1"))  # 11 approved, 3 flagged</pre>
 <pre class="code" id="bibtex-code">@article{wang2026hcu,
   title   = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
   author  = {Haoqing Wang and Xiaoyi Zhang and Sicheng Fan and Zhexin Zhang and Xinjie Zhang and Jiahao Li and Bin Li and Yan Lu},
-  journal = {arXiv preprint},
+  journal = {arXiv preprint arXiv:2610.41432},
   year    = {2026}
 }</pre>
 </div>
@@ -1031,6 +1057,8 @@ print(ax.diff("w1"))  # 11 approved, 3 flagged</pre>
 <p>可以。<code>computer-use</code> 命令行和 Python SDK 与 MCP 服务器使用同一个核心，并在每个桌面上共用一个守护进程。Python 代码也可以通过程序化工具调用（programmatic tool calling）调用 HCU。</p>
 <h3>怎样复现 OSWorld 结果？</h3>
 <p>按仓库里的 <a href="https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/OSWORLD.md" rel="noopener" target="_blank">Running OSWorld</a> 操作。每个任务在全新的 Docker/QEMU 客户机中运行，只有一个智能体和一个 MCP 进程，由官方评测器打分。</p>
+<h3>论文在哪里，怎样引用？</h3>
+<p>论文是 <a href="https://arxiv.org/abs/2610.41432" rel="noopener" target="_blank">arXiv:2610.41432</a> [cs.HC]，2026 年 10 月 30 日提交，DOI 10.48550/arXiv.2610.41432。BibTeX 条目见上方。</p>
 </details>
 </div>
 </section>
@@ -1040,7 +1068,7 @@ print(ax.diff("w1"))  # 11 approved, 3 flagged</pre>
 <span>Hybrid Computer Use · Microsoft Research、复旦大学、清华大学</span>
 <nav aria-label="页脚">
 <a href="https://github.com/microsoft/Hybrid-Computer-Use" rel="noopener" target="_blank">GitHub</a>
-<a href="assets/Hybrid-Computer-Use.pdf" rel="noopener" target="_blank">论文</a>
+<a href="https://arxiv.org/abs/2610.41432" rel="noopener" target="_blank">论文</a>
 <a href="llms.txt">llms.txt</a>
 </nav>
 </div>

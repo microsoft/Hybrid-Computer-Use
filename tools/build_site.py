@@ -187,7 +187,7 @@ def write_llms_full(url):
         ' general AI agents such as Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and Windows'
         ' desktops through code, accessibility (AX), and the GUI. This file is the project page as Markdown with every'
         ' result table; the interactive page is index.html and the Chinese version is zh.html.'
-        ' Paper: https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf.'
+        ' Paper: https://arxiv.org/abs/2610.41432 (arXiv, 30 October 2026, DOI 10.48550/arXiv.2610.41432).'
         ' Code (MIT License): https://github.com/microsoft/Hybrid-Computer-Use.',
         '',
         '',

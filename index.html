@@ -40,6 +40,10 @@
   <meta name="citation_online_date" content="2026/10/30" />
   <meta name="citation_pdf_url" content="https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf" />
   <meta name="citation_abstract_html_url" content="https://microsoft.github.io/Hybrid-Computer-Use/" />
+  <meta name="citation_doi" content="10.48550/arXiv.2610.41432" />
+  <meta name="citation_arxiv_id" content="2610.41432" />
+  <meta name="citation_technical_report_institution" content="arXiv" />
+  <meta name="citation_technical_report_number" content="arXiv:2610.41432" />
   <meta name="citation_language" content="en" />
   <meta name="citation_keywords" content="computer-use agents; GUI agents; accessibility; MCP; OSWorld; Windows Agent Arena; desktop automation" />
   <meta property="og:site_name" content="Hybrid Computer Use" />
@@ -70,6 +74,20 @@
         "headline": "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents",
         "name": "Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents",
         "alternateName": "HCU",
+        "url": "https://arxiv.org/abs/2610.41432",
+        "sameAs": "https://arxiv.org/abs/2610.41432",
+        "identifier": [
+          {
+            "@type": "PropertyValue",
+            "propertyID": "DOI",
+            "value": "10.48550/arXiv.2610.41432"
+          },
+          {
+            "@type": "PropertyValue",
+            "propertyID": "arXiv",
+            "value": "2610.41432"
+          }
+        ],
         "abstract": "Computer-use agents now run tasks from everyday desktop work to long professional workflows. Most agent interfaces use screenshots with mouse and keyboard input, so the model must interpret pixels at every step while the semantic and programmatic interfaces of the computer stay hidden. We introduce Hybrid Computer Use (HCU), which combines code and command-line tools, accessibility (AX), and the GUI in one interface. HCU is a two-tool MCP server (AX and GUI) that runs beside the agent's own shell and file tools. It returns compact AX working trees with short refs, runs batches of actions with in-call waits, reports post-action AX diffs, and checks live state before it sends any desktop input. On OSWorld 2.0, OSWorld 1.0 (four frontier models, four harnesses), WeaveBench, MacAgentBench, and Windows Agent Arena, HCU raises task scores and lowers cost.",
         "author": [
           {
@@ -383,6 +401,14 @@
               "@type": "Answer",
               "text": "Follow Running OSWorld in the repository. Each task runs in a fresh Docker/QEMU guest with one agent and one MCP process, and the official evaluator scores the result."
             }
+          },
+          {
+            "@type": "Question",
+            "name": "Where is the paper, and how do I cite it?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The paper is arXiv:2610.41432 [cs.HC], submitted on 30 October 2026, DOI 10.48550/arXiv.2610.41432. The BibTeX entry is above."
+            }
           }
         ]
       }
@@ -437,7 +463,7 @@
       </nav>
       <div class="nav-actions">
         <a class="btn btn-subtle lang-switch" href="zh.html" hreflang="zh-CN" lang="zh-CN">中文</a>
-        <a class="btn" href="assets/Hybrid-Computer-Use.pdf" target="_blank" rel="noopener"><svg><use href="#i-paper"/></svg><span>Paper</span></a>
+        <a class="btn" href="https://arxiv.org/abs/2610.41432" target="_blank" rel="noopener"><svg><use href="#i-paper"/></svg><span>Paper</span></a>
         <a class="btn btn-primary" href="https://github.com/microsoft/Hybrid-Computer-Use" target="_blank" rel="noopener"><svg><use href="#i-github"/></svg><span>Code</span></a>
       </div>
     </div>
@@ -457,7 +483,7 @@
           <p class="author-note">* Work done during an internship at Microsoft Research. † Project lead.</p>
         </div>
         <div class="hero-actions">
-          <a class="btn btn-primary btn-lg" href="assets/Hybrid-Computer-Use.pdf" target="_blank" rel="noopener"><svg><use href="#i-paper"/></svg>Paper</a>
+          <a class="btn btn-primary btn-lg" href="https://arxiv.org/abs/2610.41432" target="_blank" rel="noopener"><svg><use href="#i-paper"/></svg>Paper</a>
           <a class="btn btn-lg" href="https://github.com/microsoft/Hybrid-Computer-Use" target="_blank" rel="noopener"><svg><use href="#i-github"/></svg>Code</a>
           <a class="btn btn-lg" href="#citation"><svg><use href="#i-quote"/></svg>BibTeX</a>
         </div>
@@ -1045,7 +1071,7 @@ print(ax.diff("w1"))  # 11 approved, 3 flagged</pre>
           <pre class="code" id="bibtex-code">@article{wang2026hcu,
   title   = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
   author  = {Haoqing Wang and Xiaoyi Zhang and Sicheng Fan and Zhexin Zhang and Xinjie Zhang and Jiahao Li and Bin Li and Yan Lu},
-  journal = {arXiv preprint},
+  journal = {arXiv preprint arXiv:2610.41432},
   year    = {2026}
 }</pre>
         </div>
@@ -1067,6 +1093,8 @@ print(ax.diff("w1"))  # 11 approved, 3 flagged</pre>
           <p>Yes. The <code>computer-use</code> command line and the Python SDK use the same core as the MCP server and share one daemon per desktop. Python code can also call HCU through programmatic tool calling.</p>
           <h3>How do I reproduce the OSWorld results?</h3>
           <p>Follow <a href="https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/OSWORLD.md" target="_blank" rel="noopener">Running OSWorld</a> in the repository. Each task runs in a fresh Docker/QEMU guest with one agent and one MCP process, and the official evaluator scores the result.</p>
+          <h3>Where is the paper, and how do I cite it?</h3>
+          <p>The paper is <a href="https://arxiv.org/abs/2610.41432" target="_blank" rel="noopener">arXiv:2610.41432</a> [cs.HC], submitted on 30 October 2026, DOI 10.48550/arXiv.2610.41432. The BibTeX entry is above.</p>
         </details>
       </div>
     </section>
@@ -1077,7 +1105,7 @@ print(ax.diff("w1"))  # 11 approved, 3 flagged</pre>
       <span>Hybrid Computer Use · Microsoft Research, Fudan University, Tsinghua University</span>
       <nav aria-label="Footer">
         <a href="https://github.com/microsoft/Hybrid-Computer-Use" target="_blank" rel="noopener">GitHub</a>
-        <a href="assets/Hybrid-Computer-Use.pdf" target="_blank" rel="noopener">Paper</a>
+        <a href="https://arxiv.org/abs/2610.41432" target="_blank" rel="noopener">Paper</a>
         <a href="llms.txt">llms.txt</a>
       </nav>
     </div>

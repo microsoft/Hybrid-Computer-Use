@@ -1,6 +1,6 @@
 # Hybrid Computer Use (HCU): full page text
 
-> Hybrid Computer Use (HCU) is an open-source MCP server, computer-use, from Microsoft Research that lets general AI agents such as Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and Windows desktops through code, accessibility (AX), and the GUI. This file is the project page as Markdown with every result table; the interactive page is index.html and the Chinese version is zh.html. Paper: https://microsoft.github.io/Hybrid-Computer-Use/assets/Hybrid-Computer-Use.pdf. Code (MIT License): https://github.com/microsoft/Hybrid-Computer-Use.
+> Hybrid Computer Use (HCU) is an open-source MCP server, computer-use, from Microsoft Research that lets general AI agents such as Codex, Claude Code, Gemini CLI, and Grok Build operate Linux, macOS, and Windows desktops through code, accessibility (AX), and the GUI. This file is the project page as Markdown with every result table; the interactive page is index.html and the Chinese version is zh.html. Paper: https://arxiv.org/abs/2610.41432 (arXiv, 30 October 2026, DOI 10.48550/arXiv.2610.41432). Code (MIT License): https://github.com/microsoft/Hybrid-Computer-Use.
 
 # Hybrid Computer Use
 
@@ -492,7 +492,7 @@ One expense review. Time counts only model waiting, at about 7 s per turn.
 @article{wang2026hcu,
   title   = {Hybrid Computer Use: A Unified Programmatic, Semantic, and Visual Interface for General Agents},
   author  = {Haoqing Wang and Xiaoyi Zhang and Sicheng Fan and Zhexin Zhang and Xinjie Zhang and Jiahao Li and Bin Li and Yan Lu},
-  journal = {arXiv preprint},
+  journal = {arXiv preprint arXiv:2610.41432},
   year    = {2026}
 }
 ```
@@ -530,3 +530,7 @@ Yes. The `computer-use` command line and the Python SDK use the same core as the
 ### How do I reproduce the OSWorld results?
 
 Follow [Running OSWorld](https://github.com/microsoft/Hybrid-Computer-Use/blob/main/docs/OSWORLD.md) in the repository. Each task runs in a fresh Docker/QEMU guest with one agent and one MCP process, and the official evaluator scores the result.
+
+### Where is the paper, and how do I cite it?
+
+The paper is [arXiv:2610.41432](https://arxiv.org/abs/2610.41432) [cs.HC], submitted on 30 October 2026, DOI 10.48550/arXiv.2610.41432. The BibTeX entry is above.
