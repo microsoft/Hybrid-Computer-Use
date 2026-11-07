@@ -13,6 +13,7 @@ import uuid
 
 from hcu.paths import (
     CODE_MODE_INSTRUCTIONS_FILE,
+    DEFAULT_INSTRUCTIONS_FILE,
     DEFAULT_RESULTS_DIR,
     OSWORLD_ROOT,
 )
@@ -29,6 +30,7 @@ from hcu.osworld.agents import (
     public_tools,
     task_gateway_base,
 )
+from hcu.osworld.guide_ablation import write_ablated_guides
 from hcu.osworld.launcher import launcher_script
 from hcu.gateway.common import TASK_AFFINITY_PREFIX
 from hcu.osworld.guest import (
@@ -115,6 +117,11 @@ class TaskRun:
         return AGENT_PROFILES[self.args.agent]
 
     @property
+    def ablate(self) -> tuple[str, ...]:
+        """Removed HCU mechanisms in canonical order; empty for full HCU."""
+        return tuple(getattr(self.args, "ablate", ()))
+
+    @property
     def config_path(self) -> Path:
         return self.result_dir / {
             "codex": "guest-config.toml",
@@ -196,6 +203,14 @@ def prepare_run(args: argparse.Namespace) -> TaskRun:
     base_instructions_file = Path(
         args.base_instructions_file
     ).resolve()
+    ablate = tuple(getattr(args, "ablate", ()))
+    if ablate:
+        # run_task has checked that the default guides are selected; the
+        # agent gets copies without the passages of the removed mechanisms.
+        guides = write_ablated_guides(
+            DEFAULT_INSTRUCTIONS_FILE.parent, result_dir / "ablated-instructions", ablate,
+        )
+        instructions_file, base_instructions_file = guides["hybrid.md"], guides["base.md"]
     required_files = [agent_binary, mcp_binary, base_instructions_file]
     if instructions_file is not None:
         required_files.append(instructions_file)
@@ -278,14 +293,16 @@ def stage_local_files(run: TaskRun) -> None:
             base_instructions=GUEST_BASE_INSTRUCTIONS,
             mcp_command=GUEST_MCP,
             channels=args.channels,
+            ablate=run.ablate,
             execution_context="isolated-guest",
             code_mode=getattr(args, "code_mode", False),
         )
     elif args.agent == "claude-code":
-        config = claude_mcp_config(channels=args.channels)
+        config = claude_mcp_config(channels=args.channels, ablate=run.ablate)
     elif args.agent == "gemini-cli":
         config = gemini_settings(
-            model=args.model, effort=args.effort, channels=args.channels
+            model=args.model, effort=args.effort, channels=args.channels,
+            ablate=run.ablate,
         )
     else:
         config = grok_config(
@@ -293,6 +310,7 @@ def stage_local_files(run: TaskRun) -> None:
             base_url=run.agent_endpoint + "/v1",
             effort=args.effort,
             channels=args.channels,
+            ablate=run.ablate,
         )
     write_text(run.config_path, config)
     write_text(
@@ -379,6 +397,7 @@ def initial_meta(run: TaskRun, docker_runtime: dict) -> dict:
         ),
         "mcp_binary": str(run.mcp_binary),
         "mcp_channels": args.channels or None,
+        "ablate": list(run.ablate),
         "code_mode": bool(getattr(args, "code_mode", False)),
         "mcp_public_tools": run.mcp_public_tools,
         "instructions_file": str(run.instructions_file) if run.instructions_file else None,

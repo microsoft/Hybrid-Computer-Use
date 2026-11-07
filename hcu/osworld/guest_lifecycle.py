@@ -13,8 +13,10 @@ from hcu.osworld.guest import (
     GUEST_GEMINI_CLI,
     GUEST_GEMINI_NODE,
     GUEST_GEMINI_PACKAGE,
+    GUEST_GUARD_LOG,
     GUEST_MCP,
     request_execute,
+    save_guest_artifact,
     transient_workload_command,
 )
 from hcu.osworld.runtime import (
@@ -193,6 +195,9 @@ def prepare_guest(run: TaskRun, env: DesktopEnv) -> str:
         timeout=180,
     )
     meta["mcp_probe"] = mcp_probe.get("output", "").strip()
+    if "guard" in run.ablate:
+        # The guard log records the agent's run, not the preflight probe.
+        request_execute(base_url, ["rm", "-f", GUEST_GUARD_LOG], timeout=30)
     initial_wait_remaining = max(
         0.0,
         60.0 - (time.monotonic() - reset_finished_at),
@@ -206,8 +211,33 @@ def prepare_guest(run: TaskRun, env: DesktopEnv) -> str:
     return base_url
 
 
+GUARD_LOG_FILE = "guard.jsonl"
+
+
+def save_guard_log(run: TaskRun, env: DesktopEnv) -> None:
+    """Copy the guest's guard log into the result directory.
+
+    The MCP server writes it only with ``guard`` ablated. ``meta.json``
+    names the copy, or holds None when the guest has no log.
+    """
+    try:
+        data = save_guest_artifact(
+            env.setup_controller.http_server,
+            GUEST_GUARD_LOG,
+            run.result_dir / GUARD_LOG_FILE,
+        )
+        run.meta["guard_log"] = GUARD_LOG_FILE if data is not None else None
+    except Exception as exc:
+        logging.exception("Failed to copy the guard log")
+        run.meta["guard_log"] = None
+        run.meta["guard_log_error"] = f"{type(exc).__name__}: {exc}"
+    run.write_meta(ensure_ascii=False)
+
+
 def close_guest(run: TaskRun, env: DesktopEnv) -> None:
-    """Stop recording, then remove or retain the task container."""
+    """Copy the guard log, stop recording, then remove or retain the container."""
+    if "guard" in run.ablate:
+        save_guard_log(run, env)
     if run.recording_started:
         try:
             env.controller.end_recording(
