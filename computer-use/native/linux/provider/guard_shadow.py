@@ -61,3 +61,16 @@ def shadow_guard(channel, guard, reason, **detail):
         except OSError:
             pass
     return True
+
+
+def shadow_layout_guard(reason, frame_id, actions=(), region=None):
+    """shadow_guard for the GUI layout guard; logs each action's point."""
+    points = []
+    for action in actions:
+        point = {"type": action.get("type")}
+        point.update({key: action[key] for key in ("x", "y", "path") if key in action})
+        points.append(point)
+    detail = {"frame_id": frame_id, "actions": points}
+    if region is not None:
+        detail["region"] = region
+    return shadow_guard("gui", "zoom_layout" if region is not None else "layout", reason, **detail)
