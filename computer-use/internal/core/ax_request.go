@@ -250,6 +250,9 @@ func (s *Service) axAct(
 	request *axRequest,
 	obs observation,
 ) ToolCallResult {
+	if contract.Ablated(contract.AblateDiff) {
+		return s.axActWithoutFeedback(request, obs)
+	}
 	result := s.axBatchDecoded(
 		request.actions,
 		obs,

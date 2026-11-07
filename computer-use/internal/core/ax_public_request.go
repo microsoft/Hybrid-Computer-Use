@@ -109,6 +109,15 @@ var axModeFields = map[string][]string{
 	contract.AXModeAct:     {"mode", "window_ref", "actions", "observe"},
 }
 
+// axModeAllowedFields lists the fields a mode accepts. Without diff, act
+// returns no observation, so it takes no observe field.
+func axModeAllowedFields(mode string) []string {
+	if mode == contract.AXModeAct && contract.Ablated(contract.AblateDiff) {
+		return []string{"mode", "window_ref", "actions"}
+	}
+	return axModeFields[mode]
+}
+
 // axActionFields lists the fields each action type accepts besides type.
 var axActionFields = map[string][]string{
 	"click":     {"ref", "allow_global_input"},
@@ -159,7 +168,7 @@ func decodeAXCall(args map[string]any) (*axRequest, *axArgError) {
 	}
 	mode, ok := rawMode.(string)
 	if !ok || !contract.ContainsString([]string{contract.AXModeApps, contract.AXModeObserve, contract.AXModeFind, contract.AXModeAct}, mode) {
-		if mode == "assert_ax" {
+		if mode == "assert_ax" && !contract.Ablated(contract.AblateWait) {
 			return nil, axInvalid("mode",
 				`mode "assert_ax" was removed; wait with an act call that has only wait steps`,
 				`{"mode":"act","actions":[{"type":"wait","ref":"r1"}]}`)
@@ -173,10 +182,12 @@ func decodeAXCall(args map[string]any) (*axRequest, *axArgError) {
 		}
 		return nil, err
 	}
-	if err := axRejectRemovedUntil(args); err != nil {
-		return nil, err
+	if !contract.Ablated(contract.AblateWait) {
+		if err := axRejectRemovedUntil(args); err != nil {
+			return nil, err
+		}
 	}
-	if err := axCheckFields(args, axModeFields[mode], "", "mode "+strconv.Quote(mode)); err != nil {
+	if err := axCheckFields(args, axModeAllowedFields(mode), "", "mode "+strconv.Quote(mode)); err != nil {
 		return nil, err.withRule(axRuleFieldForMode)
 	}
 	request := &axRequest{mode: mode}
@@ -194,7 +205,7 @@ func decodeAXCall(args map[string]any) (*axRequest, *axArgError) {
 	if request.scope, err = axOptionalEnum(args, "scope", "", contract.AXScopeValues); err != nil {
 		return nil, err
 	}
-	if request.observe, err = axOptionalEnum(args, "observe", "", contract.ObserveValues); err != nil {
+	if request.observe, err = axOptionalEnum(args, "observe", "", contract.PublishedObserveValues()); err != nil {
 		return nil, err
 	}
 	if request.root, err = axOptionalPattern(args, "root", "", axRootPattern, `"focused" or rN`); err != nil {
@@ -223,8 +234,11 @@ func decodeAXCall(args map[string]any) (*axRequest, *axArgError) {
 			}
 		}
 		if request.observe == contract.ObserveNone {
-			return nil, axInvalid("observe", `observe "none" returns nothing; to wait without input, send act with only wait steps`,
-				"").withRule(axRuleObserveNone).withFix(axRemove("observe"))
+			message := `observe "none" returns nothing; to wait without input, send act with only wait steps`
+			if contract.Ablated(contract.AblateWait) {
+				message = `observe "none" returns nothing; it is only for act`
+			}
+			return nil, axInvalid("observe", message, "").withRule(axRuleObserveNone).withFix(axRemove("observe"))
 		}
 		if request.app == "" && request.windowRef == "" && request.readText == nil {
 			return nil, axInvalid("app", "observe needs app or window_ref",
@@ -332,9 +346,12 @@ func decodeAXActions(raw any) ([]axBatchAction, *axArgError) {
 		return nil, axInvalid("actions", `act needs at least one action; use mode "observe" to read`,
 			`[{"type":"click","ref":"r1"}]`)
 	}
-	if len(items) > contract.AXBatchMaxActions {
-		return nil, axInvalid("actions", fmt.Sprintf("act accepts at most %d actions", contract.AXBatchMaxActions), "").
-			withFix(axSet("actions", items[:contract.AXBatchMaxActions]))
+	if limit := contract.AXActMaxActions(); len(items) > limit {
+		message := fmt.Sprintf("act accepts at most %d actions", limit)
+		if limit == 1 {
+			message = "act takes one action per call; send the others in later calls"
+		}
+		return nil, axInvalid("actions", message, "").withFix(axSet("actions", items[:limit]))
 	}
 	actions := make([]axBatchAction, 0, len(items))
 	totalText, totalWait := 0, 0
@@ -349,8 +366,15 @@ func decodeAXActions(raw any) ([]axBatchAction, *axArgError) {
 			return nil, err
 		}
 		if index > 0 && actions[index-1].actionType == "close" && action.actionType != "wait" {
+			if contract.Ablated(contract.AblateWait) {
+				return nil, axInvalid(path, "close must be the last step: a closed window cannot take later input",
+					"").withRule(contract.ArgumentRuleCloseNotLast).withFix(axSet("actions", items[:index]))
+			}
 			return nil, axInvalid(path, "a closed window cannot take later input; after close, wait for the window to be gone first",
 				`{"type":"wait","window":"window title","gone":true}`).withRule(contract.ArgumentRuleCloseNotLast)
+		}
+		if err := axCheckOneInputStep(actions, action, items, path); err != nil {
+			return nil, err
 		}
 		totalText += len([]rune(action.text)) + len([]rune(action.value))
 		if totalText > contract.AXBatchMaxText {
@@ -379,7 +403,7 @@ func decodeAXAction(object map[string]any, path string) (axBatchAction, *axArgEr
 	action := axBatchAction{pages: 1}
 	rawType, hasType := object["type"]
 	actionType, _ := rawType.(string)
-	if !hasType || !contract.ContainsString(contract.AXActionTypes, actionType) {
+	if !hasType || !contract.ContainsString(contract.PublishedAXActionTypes(), actionType) {
 		if hint := axActionShapeHint(object); hint != "" && !hasType {
 			field := "type"
 			for name := range object {
@@ -389,11 +413,11 @@ func decodeAXAction(object map[string]any, path string) (axBatchAction, *axArgEr
 			}
 			return action, axInvalid(path+"."+field, `actions use "type", not "`+field+`"`, hint)
 		}
-		message := "type must be one of " + strings.Join(contract.AXActionTypes, ", ")
+		message := "type must be one of " + strings.Join(contract.PublishedAXActionTypes(), ", ")
 		if hasType {
 			message += "; got " + contract.CompactJSON(rawType)
 		} else {
-			message = "action needs type: " + strings.Join(contract.AXActionTypes, ", ")
+			message = "action needs type: " + strings.Join(contract.PublishedAXActionTypes(), ", ")
 		}
 		err := axInvalid(path+".type", message, axActionShapeHint(object))
 		switch {
@@ -592,7 +616,7 @@ func axActionShapeHint(object map[string]any) string {
 	if synonym, known := axActionVerbSynonyms[verb]; known {
 		verb = synonym
 	}
-	if !contract.ContainsString(contract.AXActionTypes, verb) {
+	if !contract.ContainsString(contract.PublishedAXActionTypes(), verb) {
 		switch {
 		case AXWindowRefPattern.MatchString(ref) && strings.Contains(strings.ToLower(verb), "close"):
 			verb = "close"

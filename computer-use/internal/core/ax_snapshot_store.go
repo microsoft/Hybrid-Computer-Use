@@ -140,7 +140,7 @@ func DeliveredSnapshotKey(snapshot *AppSnapshot) string {
 }
 
 func (s *Service) rememberDeliveredTree(key string) {
-	if key == "" {
+	if key == "" || s.observations.hidden {
 		return
 	}
 	if len(s.observations.lastFullTree) >= contract.MaxDeliveredTrees &&
@@ -153,7 +153,7 @@ func (s *Service) rememberDeliveredTree(key string) {
 }
 
 func (s *Service) rememberDeliveredSnapshot(snapshot *AppSnapshot) {
-	if snapshot == nil {
+	if snapshot == nil || s.observations.hidden {
 		return
 	}
 	if providerCoverageSummary(snapshot.Annotations).AcquisitionIncomplete > 0 {
