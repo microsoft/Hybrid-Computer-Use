@@ -224,7 +224,10 @@ one channel only; `--instructions-file ""` runs without a profile.
 comma-separated subset of `batching`, `wait`, `diff` and `guard`. The runner
 sets `COMPUTER_USE_ABLATE` in the MCP server environment of every harness and
 gives the agent copies of `instructions/base.md` and `instructions/hybrid.md`
-without the passages that describe the removed mechanisms. It writes the
+without the passages that describe the removed mechanisms. For each of
+`batching`, `wait` and `diff` the guide instead gets one sentence that
+states how the ablated `act` behaves, as the AX tool description does, so
+the agent does not learn the change from rejected calls. It writes the
 copies to `ablated-instructions/` in the task's result directory. Other
 guides, `--instructions-file ""` and `--code-mode` are refused with
 `--ablate`, because they can still describe a removed mechanism. With `guard`

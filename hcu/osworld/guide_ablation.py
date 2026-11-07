@@ -3,7 +3,11 @@
 ``COMPUTER_USE_ABLATE`` removes HCU mechanisms from the computer-use server
 (see ``computer-use/internal/contract/ablation.go``). The guides given to the
 agent must not describe a removed mechanism either, so this module deletes
-the passages that describe it and changes nothing else.
+the passages that describe it. It also adds one sentence per ablation that
+states how the ablated tools behave, the same fact the tool description
+states, and no new advice: otherwise an ablation run would also measure
+the agent learning the changed rules from rejected calls. Nothing else
+changes.
 
 The passages are listed here as exact text, not marked inside the guides:
 the guides are model input, and markers in them would change the text of
@@ -68,6 +72,7 @@ _ACT_EXAMPLES = """
 {"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"wait","window":"Export"},{"type":"type","text":"q3.csv"},{"type":"keypress","keys":["ENTER"]},{"type":"wait","window":"Export","gone":true}]}
 {"mode":"act","actions":[{"type":"click","ref":"r7"},{"type":"wait","query":{"role":"menu item","name_contains":"Paragraph"}},{"type":"click","ref":"r9"}]}
 ```
+
 """
 
 _SELECT_READBACK = """ The result reports what is now
@@ -109,6 +114,31 @@ PASSAGES: dict[str, tuple[tuple[str, str], ...]] = {
     ),
     "guard": (),
 }
+
+# The sentence each ablation adds, after this bullet, which no ablation
+# removes. guard adds none: the agent cannot notice the shadow mode.
+_STATEMENT_ANCHOR = """\
+- Once the source, target, and operation are known, act. Further checks must
+  answer a concrete blocker.
+"""
+STATEMENTS = {
+    "batching": """\
+- Each `act` sends one input step, with optional `wait` steps before or after
+  it. Send further input in later calls.
+""",
+    "wait": """\
+- An AX `act` cannot pause for a later state. To check one, read again with
+  `observe` or `find`.
+""",
+    "diff": """\
+- An `act` result reports only whether input was sent and how many steps
+  completed. To see what changed, use `observe`, `find`, or a GUI screenshot.
+""",
+}
+# With both batching and wait ablated, an act holds one step and no waits.
+_ONE_STEP = """\
+- Each `act` sends one step. Send further steps in later calls.
+"""
 
 
 def parse_ablation(value: str | list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
@@ -170,7 +200,17 @@ def ablated_guide(text: str, file_name: str, ablations: tuple[str, ...]) -> str:
             kept.append(text[position:start])
         position = max(position, end)
     kept.append(text[position:])
-    return "".join(kept)
+    text = "".join(kept)
+    if file_name != "hybrid.md":
+        return text
+    added = [STATEMENTS[name] for name in ablations if name in STATEMENTS]
+    if "batching" in ablations and "wait" in ablations:
+        added[0] = _ONE_STEP
+    if not added:
+        return text
+    if text.count(_STATEMENT_ANCHOR) != 1:
+        raise ValueError("hybrid.md: the ablation statements' anchor must occur exactly once")
+    return text.replace(_STATEMENT_ANCHOR, _STATEMENT_ANCHOR + "".join(added))
 
 
 def write_ablated_guides(

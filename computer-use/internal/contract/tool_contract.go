@@ -549,13 +549,19 @@ func publishedAXToolDescription() string {
 		last := len(parts) - 1
 		sentence = strings.Join(parts[:last], ", ") + ", and " + parts[last] + "."
 	}
+	if diff {
+		// The tools state how the ablated act behaves, as the guide does.
+		sentence += " Its result reports only whether input was sent and how many steps completed; " +
+			"see what changed with observe, find, or GUI."
+	}
 	text := strings.Replace(axToolDescription, axActFullSentence, sentence, 1)
 	text = strings.Replace(text, axActFullExample, example, 1)
 	if diff {
 		text = strings.Replace(text, " and reports the selection read back", "", 1)
 	}
 	if wait {
-		text = strings.Replace(text, axWaitDescription, "", 1)
+		text = strings.Replace(text, axWaitDescription,
+			"act cannot pause for a later state; to check one, read again with observe or find. ", 1)
 	}
 	if wait || diff {
 		text = strings.Replace(text, "Skip waits the report answers. ", "", 1)
