@@ -207,6 +207,11 @@ func (s *Service) axBatchContinuityStop(
 	if continuity == axWindowSame {
 		return ToolCallResult{}, false
 	}
+	if shadowGuard("ax", "batch_window", "logical_window_"+string(continuity)+"_between_actions", map[string]any{
+		"window_ref": context.WindowRef, "next_action_index": index + 1,
+	}) {
+		return ToolCallResult{}, false
+	}
 	anyInputEmitted, anyPartialPossible, anyMutationUnknown := batchMutationSummary(actionEvidence)
 	failureCode := "stale_target"
 	messageCode := "batch_window_changed"
