@@ -1,7 +1,12 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/microsoft/Hybrid-Computer-Use/computer-use/internal/contract"
 )
@@ -69,3 +74,35 @@ func axCheckOneInputStep(earlier []axBatchAction, action axBatchAction, items []
 	return nil
 }
 
+// shadowGuard reports whether the guard ablation lets input through that a
+// guard decided to stop. It first appends the decision to
+// COMPUTER_USE_GUARD_LOG, in the format of the Linux provider's
+// guard_shadow.py, so both sides of one run share one log.
+func shadowGuard(channel, guard, reason string, detail map[string]any) bool {
+	if !contract.Ablated(contract.AblateGuard) {
+		return false
+	}
+	record := map[string]any{
+		"at": time.Now().UTC().Format("2006-01-02T15:04:05.000Z"), "channel": channel,
+		"guard": guard, "reason": reason, "would_block": true,
+	}
+	for key, value := range detail {
+		record[key] = value
+	}
+	path := strings.TrimSpace(os.Getenv(contract.GuardLogEnv))
+	line, err := json.Marshal(record)
+	if path == "" || err != nil {
+		return true
+	}
+	// A lost log line must not fail the input it describes.
+	if dir := filepath.Dir(path); dir != "." {
+		_ = os.MkdirAll(dir, 0o755)
+	}
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return true
+	}
+	defer file.Close()
+	_, _ = file.Write(append(line, '\n'))
+	return true
+}
