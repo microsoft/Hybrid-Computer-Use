@@ -36,6 +36,7 @@ from runtime_tests.test_popup_rendering import *  # noqa: F401,F403
 from runtime_tests.test_native_windows import *  # noqa: F401,F403
 from runtime_tests.test_x11_client_identity import *  # noqa: F401,F403
 from runtime_tests.test_window_geometry import *  # noqa: F401,F403
+from runtime_tests.test_guard_shadow import *  # noqa: F401,F403
 
 
 if __name__ == "__main__":
