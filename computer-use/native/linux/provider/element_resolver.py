@@ -7,8 +7,10 @@ from .foundation import (
     DEFAULT_TEXT_LIMIT,
     OperationFailure,
     child_at,
+    node_name,
     node_role,
     safe,
+    state_value,
 )
 from .node_geometry import extents
 from .primitives import name_fingerprint
@@ -539,3 +541,42 @@ def _semantic_resolution_note(
         ),
     )
     return note
+
+
+# Identity refusals of a semantic target. The guard ablation acts on the
+# snapshot path instead when a node is still there.
+_SHADOWED_TARGET_FAILURES = {
+    "stale_element_ref", "semantic_target_not_found", "semantic_target_ambiguous",
+}
+
+
+def shadow_semantic_refusal(app, window_index, bounds, target, refused):
+    """Return (node, record) at the target's snapshot path, or None.
+
+    None keeps the refusal: the guard ablation is off, the refusal is not an
+    identity check, or no live node is left on the path.
+    """
+    if getattr(refused, "failure_code", None) not in _SHADOWED_TARGET_FAILURES:
+        return None
+    paths = [target.get("runtimeId") or []]
+    paths.extend(target.get("runtimeAliases") or [])
+    for path in paths:
+        if not path:
+            continue
+        node = resolve_path(app, path)
+        if node is None or state_value(node, Atspi.StateType.DEFUNCT) is True:
+            continue
+        if not shadow_guard(
+            "ax", "target_identity", refused.failure_code,
+            message=str(refused), selector=target.get("selector"), path=list(path),
+            live={"role": node_role(node), "name": node_name(node)},
+        ):
+            return None
+        record = {
+            "runtimeId": list(path),
+            "controlType": node_role(node),
+            "name": node_name(node),
+            "frame": safe(lambda: relative_frame(node, bounds)),
+        }
+        return node, record
+    return None

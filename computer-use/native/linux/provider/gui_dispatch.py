@@ -33,7 +33,7 @@ from .gui_input import (
     validate_gui_actions,
 )
 from .input_primitives import InputEmissionError
-from .guard_shadow import shadow_guard
+from .guard_shadow import shadow_layout_guard
 from .snapshot import capture_gui_snapshot
 from .desktop_layout import (
     desktop_bounds,
@@ -287,18 +287,6 @@ def layout_hit(layout, x, y):
     return None
 
 
-def _guard_points(actions):
-    """The action types and coordinates a guard log line records."""
-    points = []
-    for action in actions:
-        point = {"type": action.get("type")}
-        for key in ("x", "y", "path"):
-            if key in action:
-                point[key] = action[key]
-        points.append(point)
-    return points
-
-
 def coordinates_still_valid(reference, current, actions):
     """Whether every coordinate of actions still lands where it did.
 
@@ -407,9 +395,8 @@ def gui_zoom(action, bounds, frame_id):
         left, top, width, height = geometry["native"]
         if not region_still_valid(
                 _published_layouts.get(frame_id), capture_layout(current),
-                (left, top, width, height)) and not shadow_guard(
-                    "gui", "zoom_layout", "windows_over_region_changed",
-                    frame_id=frame_id, region=[left, top, width, height]):
+                (left, top, width, height)) and not shadow_layout_guard(
+                    "zoom_region_changed", frame_id, region=[left, top, width, height]):
             return stale(
                 "The windows over the zoom region changed since the frame its "
                 "coordinates came from.", current)
@@ -589,9 +576,7 @@ def _perform_gui(actions, settle_ms=800, frame_id=None):
         if (current_capture.frame_id != frame_id
                 and not coordinates_still_valid(
                     reference_layout, capture_layout(current_capture), validated)
-                and not shadow_guard(
-                    "gui", "layout", "layout_changed_before_batch",
-                    frame_id=frame_id, actions=_guard_points(validated))):
+                and not shadow_layout_guard("changed_before_batch", frame_id, validated)):
             return {
                 "ok": False,
                 "error": "The desktop layout changed since the screenshot used "
@@ -633,10 +618,7 @@ def _perform_gui(actions, settle_ms=800, frame_id=None):
                 if (live_frame_id != frame_id
                         and not coordinates_still_valid(
                             reference_layout, live_layout, [action])
-                        and not shadow_guard(
-                            "gui", "layout", "layout_changed_during_batch",
-                            frame_id=frame_id, index=index,
-                            actions=_guard_points([action]))):
+                        and not shadow_layout_guard("changed_during_batch", frame_id, [action])):
                     error_snapshot, evidence_note = failure_evidence()
                     return {
                         "ok": False,

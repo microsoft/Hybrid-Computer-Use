@@ -6,7 +6,6 @@ from .foundation import (
     MAX_DEPTH,
     MAX_ELEMENTS,
     OperationFailure,
-    node_name,
     node_pid,
     node_role,
     process_generation,
@@ -28,7 +27,6 @@ from .ax_node_properties import (
 from .x11_windows import (
     main_window,
     select_window_by_handle,
-    relative_frame,
     window_identity_set,
     window_bounds,
 )
@@ -40,8 +38,8 @@ from .native_windows import native_window_for_operation, perform_native_window_a
 from .guard_shadow import shadow_guard
 from .element_resolver import (
     find_element_at_snapshot_path,
-    resolve_path,
     resolve_semantic_target,
+    shadow_semantic_refusal,
 )
 from .window_resolver import (
     perform_ax_window_action,
@@ -525,7 +523,7 @@ def _resolve_action_target(app, operation, operation_kind, action_input):
                 operation,
             )
         except OperationFailure as refused:
-            shadowed = _shadow_semantic_refusal(
+            shadowed = shadow_semantic_refusal(
                 app, window_index, bounds, semantic_target, refused)
             if shadowed is None:
                 raise
@@ -544,45 +542,6 @@ def _resolve_action_target(app, operation, operation_kind, action_input):
                 input_events_emitted=False,
             )
     return element, element_record, semantic_note, window, bounds
-
-
-# Identity refusals of a semantic target. The guard ablation acts on the
-# snapshot path instead when a node is still there.
-_SHADOWED_TARGET_FAILURES = {
-    "stale_element_ref", "semantic_target_not_found", "semantic_target_ambiguous",
-}
-
-
-def _shadow_semantic_refusal(app, window_index, bounds, target, refused):
-    """Return (node, record) at the target's snapshot path, or None.
-
-    None keeps the refusal: the guard ablation is off, the refusal is not an
-    identity check, or no live node is left on the path.
-    """
-    if getattr(refused, "failure_code", None) not in _SHADOWED_TARGET_FAILURES:
-        return None
-    paths = [target.get("runtimeId") or []]
-    paths.extend(target.get("runtimeAliases") or [])
-    for path in paths:
-        if not path:
-            continue
-        node = resolve_path(app, path)
-        if node is None or state_value(node, Atspi.StateType.DEFUNCT) is True:
-            continue
-        if not shadow_guard(
-            "ax", "target_identity", refused.failure_code,
-            message=str(refused), selector=target.get("selector"), path=list(path),
-            live={"role": node_role(node), "name": node_name(node)},
-        ):
-            return None
-        record = {
-            "runtimeId": list(path),
-            "controlType": node_role(node),
-            "name": node_name(node),
-            "frame": safe(lambda: relative_frame(node, bounds)),
-        }
-        return node, record
-    return None
 
 
 def _resolve_select_end(app, operation, action_input, window, bounds):
