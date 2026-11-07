@@ -55,6 +55,22 @@ const ServerInstructions = "" +
 	"before input and report what changed, and outside input makes their refs and " +
 	"diffs stale. After GUI input, read AX again before reusing refs."
 
+// PublishedServerInstructions is ServerInstructions without the sentences
+// about ablated mechanisms.
+func PublishedServerInstructions() string {
+	text := ServerInstructions
+	if Ablated(AblateWait) {
+		text = strings.Replace(text, "returns controls as rN refs, acts on "+
+			"them, and waits with wait steps.", "returns controls as rN refs, and acts on them.", 1)
+	}
+	if Ablated(AblateDiff) {
+		text = strings.Replace(text, "check the target window before input and report what changed, "+
+			"and outside input makes their refs and diffs stale.",
+			"check the target window before input, and outside input makes their refs stale.", 1)
+	}
+	return text
+}
+
 type ToolDefinition struct {
 	Name        string         `json:"name"`
 	Title       string         `json:"title,omitempty"`
@@ -175,7 +191,7 @@ func axInputSchema() map[string]any {
 	for _, field := range AXFindFilters {
 		query[field] = nonBlankString("")
 	}
-	return map[string]any{
+	schema := map[string]any{
 		"type":                 "object",
 		"additionalProperties": false,
 		"required":             []string{"mode"},
@@ -264,6 +280,42 @@ func axInputSchema() map[string]any {
 				},
 			},
 		},
+	}
+	ablateAXInputSchema(schema)
+	return schema
+}
+
+// ablateAXInputSchema removes the fields and words of ablated mechanisms
+// from the AX schema.
+func ablateAXInputSchema(schema map[string]any) {
+	properties := schema["properties"].(map[string]any)
+	actions := properties["actions"].(map[string]any)
+	item := actions["items"].(map[string]any)["properties"].(map[string]any)
+	wait, batching := Ablated(AblateWait), Ablated(AblateBatching)
+	if wait {
+		for _, field := range []string{"window", "query", "state", "gone", "settle", "timeout_ms"} {
+			delete(item, field)
+		}
+		item["type"].(map[string]any)["enum"] = PublishedAXActionTypes()
+		item["text"].(map[string]any)["description"] = "select: substring of ref to select."
+	}
+	actions["maxItems"] = AXActMaxActions()
+	switch {
+	case batching && wait:
+		actions["description"] = "act: one step."
+	case batching:
+		actions["description"] = "act: one input step, with optional wait steps before or after it; " +
+			"a failed step stops the batch. Wait timeouts total at most 60000 ms; an omitted timeout counts as 5000 ms."
+	case wait:
+		actions["description"] = "act: ordered steps; a failed step stops the batch."
+	}
+	if Ablated(AblateDiff) {
+		properties["mode"].(map[string]any)["description"] = "apps lists confirmed top-level windows " +
+			"(wN, title, app, active) and reports incomplete inventories; observe returns a tree with rN; " +
+			"find returns matching rN; act runs actions."
+		observe := properties["observe"].(map[string]any)
+		observe["enum"] = PublishedObserveValues()
+		observe["description"] = "observe: returned evidence; default tree, full adds the full-desktop GUI screenshot."
 	}
 }
 
@@ -415,7 +467,8 @@ func GUIInputSchema() map[string]any {
 			fmt.Sprintf(
 				"Visual stillness: default %dms, max %dms. "+
 					"Final screenshot stillness, not semantic success and not extra sleep. "+
-					"After wait, usually omit it. At the cap inspect the screenshot or use an AX wait step.",
+					"After wait, usually omit it. At the cap inspect the screenshot"+
+					map[bool]string{false: " or use an AX wait step.", true: "."}[Ablated(AblateWait)],
 				DefaultSettleMS,
 				GUIMaxSettleMS,
 			),
@@ -458,6 +511,58 @@ const axToolDescription = "Accessibility for application windows. Linux: observe
 	`{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"wait","window":"Export"},{"type":"type","text":"q3.csv"},{"type":"keypress","keys":["ENTER"]}]}` + "\n" +
 	`{"mode":"find","window_ref":"w2","query":{"role":"button","name_contains":"Save"}}`
 
+const (
+	axActFullSentence = "act runs ordered steps, checks them before input, " +
+		"stops at the first failed step, and reports each target's change, windows " +
+		"opened/closed/focused, and a diff."
+	axActFullExample  = `{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"wait","window":"Export"},{"type":"type","text":"q3.csv"},{"type":"keypress","keys":["ENTER"]}]}`
+	axWaitDescription = "A wait step sends no input and fails the batch on timeout: window (title, any app), " +
+		"query (as find), ref with value/state/text, or text; gone inverts. settle needs no " +
+		"prediction: it waits until the UI changes after the step before it and stops changing; " +
+		"it fails only if nothing changed. After a window wait, keys go to that window, after " +
+		"settle to the focused one. "
+)
+
+// publishedAXToolDescription is axToolDescription without the sentences
+// and example steps of ablated mechanisms.
+func publishedAXToolDescription() string {
+	wait, batching, diff := Ablated(AblateWait), Ablated(AblateBatching), Ablated(AblateDiff)
+	subject := "act runs ordered steps"
+	clauses := []string{"checks them before input", "stops at the first failed step"}
+	example := axActFullExample
+	switch {
+	case batching && wait:
+		subject, clauses = "act runs one step", []string{"checks it before input"}
+		example = `{"mode":"act","actions":[{"type":"click","ref":"r12"}]}`
+	case batching:
+		subject = "act runs one input step with optional wait steps before or after it"
+		example = `{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"wait","window":"Export"}]}`
+	case wait:
+		example = `{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"type","text":"q3.csv"},{"type":"keypress","keys":["ENTER"]}]}`
+	}
+	if !diff {
+		clauses = append(clauses, "reports each target's change, windows opened/closed/focused, and a diff")
+	}
+	parts := append([]string{subject}, clauses...)
+	sentence := parts[0] + " and " + parts[1] + "."
+	if len(parts) > 2 {
+		last := len(parts) - 1
+		sentence = strings.Join(parts[:last], ", ") + ", and " + parts[last] + "."
+	}
+	text := strings.Replace(axToolDescription, axActFullSentence, sentence, 1)
+	text = strings.Replace(text, axActFullExample, example, 1)
+	if diff {
+		text = strings.Replace(text, " and reports the selection read back", "", 1)
+	}
+	if wait {
+		text = strings.Replace(text, axWaitDescription, "", 1)
+	}
+	if wait || diff {
+		text = strings.Replace(text, "Skip waits the report answers. ", "", 1)
+	}
+	return text
+}
+
 var guiToolDescription = fmt.Sprintf("Full-desktop screenshot and pixel input. "+
 	`{"actions":[{"type":"screenshot"}]} alone observes; {"type":"zoom","region":[x0,y0,x1,y1]} alone `+
 	"enlarges a frame region to read small text and icons. Any other batch is checked before "+
@@ -480,7 +585,7 @@ func AllToolDefinitions() []ToolDefinition {
 		{
 			Name:        PublicToolAX,
 			Title:       "Accessibility",
-			Description: axToolDescription,
+			Description: publishedAXToolDescription(),
 			Annotations: annotations("Accessibility"),
 			InputSchema: axInputSchema(),
 		},

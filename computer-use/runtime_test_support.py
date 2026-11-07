@@ -47,6 +47,7 @@ from native.linux.provider import (  # noqa: E402
     semantic_window_candidates,
     semantic_scan,
     foundation,
+    guard_shadow,
     node_geometry,
     node_visibility,
     node_facts,
@@ -76,6 +77,7 @@ from native.linux.provider import (  # noqa: E402
 
 PROVIDER_MODULES = (
     foundation,
+    guard_shadow,
     node_geometry,
     node_visibility,
     a11y_enable,

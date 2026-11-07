@@ -3,6 +3,7 @@
 import math
 import time
 
+from .guard_shadow import guards_enforced
 from .foundation import (
     Atspi,
     OperationFailure,
@@ -408,10 +409,13 @@ def _pointer_click_for_state_only_action(
         return None, "the window is not in the foreground"
     evidence_before = dict(action_evidence)
     try:
-        record, _ = require_stable_coordinate_geometry(
-            element, element_record, bounds)
-        x, y = screen_point(bounds, record, None, None)
-        require_coordinate_delivery(window, x, y, "click")
+        # These checks only choose the route: a refusal keeps the semantic
+        # action, so the guard ablation has nothing to let through.
+        with guards_enforced():
+            record, _ = require_stable_coordinate_geometry(
+                element, element_record, bounds)
+            x, y = screen_point(bounds, record, None, None)
+            require_coordinate_delivery(window, x, y, "click")
         hits = point_hits_element(window, element, x, y)
     except (OperationFailure, RuntimeError) as refused:
         action_evidence.clear()

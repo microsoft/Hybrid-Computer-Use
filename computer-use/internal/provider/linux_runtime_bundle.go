@@ -6,6 +6,7 @@ import runtimebundle "github.com/microsoft/Hybrid-Computer-Use/computer-use"
 
 var linuxProviderPaths = []string{
 	"native/linux/provider/foundation.py",
+	"native/linux/provider/guard_shadow.py",
 	"native/linux/provider/node_geometry.py",
 	"native/linux/provider/node_visibility.py",
 	"native/linux/provider/a11y_enable.py",

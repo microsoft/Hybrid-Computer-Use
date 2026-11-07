@@ -12,6 +12,7 @@ from .foundation import (
 )
 from .node_geometry import extents
 from .primitives import name_fingerprint
+from .guard_shadow import shadow_guard
 
 from .ax_node_properties import (
     accessible_id,
@@ -132,6 +133,7 @@ def find_element_at_snapshot_path_with_bounds(app, record, window_bounds):
     paths = [record.get("runtimeId") or []]
     paths.extend(record.get("runtimeAliases") or [])
     seen_paths = set()
+    mismatched = None
     for path in paths:
         path_key = tuple(path)
         if path_key in seen_paths:
@@ -142,6 +144,8 @@ def find_element_at_snapshot_path_with_bounds(app, record, window_bounds):
             node, record, window_bounds
         ):
             return node
+        if node is not None and mismatched is None:
+            mismatched = (node, path)
     # Self-managed tables expose visible cells through Table.get_accessible_at
     # instead of child enumeration. render_visible_cells gives those records a
     # stable virtual suffix [row, col], so the action resolver must understand
@@ -170,6 +174,13 @@ def find_element_at_snapshot_path_with_bounds(app, record, window_bounds):
                 and record_still_matches(node, record, window_bounds)
             ):
                 return node
+    if mismatched is not None and shadow_guard(
+        "ax", "target_identity", "path_resolves_to_a_different_element",
+        path=list(mismatched[1]),
+        expected={"role": record.get("controlType"), "name": record.get("name")},
+        live={"role": effective_role(mismatched[0]), "name": effective_name(mismatched[0])},
+    ):
+        return mismatched[0]
     return None
 
 
