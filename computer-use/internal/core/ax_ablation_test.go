@@ -102,6 +102,31 @@ func TestAblatedTextOmitsTheRemovedMechanisms(t *testing.T) {
 	}
 }
 
+// Each text-changing ablation states how the ablated act behaves, so an
+// agent does not have to learn it from rejected calls.
+func TestAblatedDescriptionStatesTheChangedBehavior(t *testing.T) {
+	statements := map[string]string{
+		contract.AblateBatching: "act runs one input step with optional wait steps before or after it",
+		contract.AblateWait:     "act cannot pause for a later state; to check one, read again with observe or find.",
+		contract.AblateDiff:     "Its result reports only whether input was sent and how many steps completed",
+	}
+	for _, set := range ablationSets() {
+		t.Run("ablate="+set, func(t *testing.T) {
+			t.Setenv(contract.AblationEnv, set)
+			description := findToolDefinition(t, contract.PublicToolAX).Description
+			for name, statement := range statements {
+				ablated := strings.Contains(","+set+",", ","+name+",")
+				if name == contract.AblateBatching && strings.Contains(set, contract.AblateWait) {
+					statement = "act runs one step"
+				}
+				if strings.Contains(description, statement) != ablated {
+					t.Errorf("%s ablated=%v, description:\n%s", name, ablated, description)
+				}
+			}
+		})
+	}
+}
+
 func TestAblatedDescriptionsKeepTheirExamplesValid(t *testing.T) {
 	example := regexp.MustCompile(`\{"mode":"act".*\}`)
 	for _, set := range ablationSets() {
