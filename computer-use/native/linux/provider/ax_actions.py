@@ -25,6 +25,7 @@ from .input_primitives import (
 
 from .tree_walk import iter_all
 from .ax_records import combo_edit_target, combo_edit_identity
+from .guard_shadow import shadow_guard
 from .input_method import InputMethodText
 
 
@@ -46,6 +47,10 @@ def resolve_combo_editor(element, record):
         return element, False
     editor = combo_edit_target(element)
     identity = combo_edit_identity(editor)
+    if (expected is not None and identity is not None and identity != expected
+            and shadow_guard("ax", "target_identity", "composite_edit_target_replaced",
+                             expected=expected, live=identity)):
+        return editor, True
     if expected is None or identity != expected:
         raise OperationFailure(
             "The combobox has no unique unchanged editable partner; no text "

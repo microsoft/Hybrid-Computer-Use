@@ -110,7 +110,7 @@ var axModeFields = map[string][]string{
 }
 
 // axModeAllowedFields lists the fields a mode accepts. Without diff, act
-// returns no observation, so it takes no observe field.
+// always returns the tree, so it takes no observe field.
 func axModeAllowedFields(mode string) []string {
 	if mode == contract.AXModeAct && contract.Ablated(contract.AblateDiff) {
 		return []string{"mode", "window_ref", "actions"}
@@ -366,7 +366,9 @@ func decodeAXActions(raw any) ([]axBatchAction, *axArgError) {
 			return nil, err
 		}
 		if index > 0 && actions[index-1].actionType == "close" && action.actionType != "wait" {
-			if contract.Ablated(contract.AblateWait) {
+			// Without wait steps, or with one input step per act, nothing
+			// can follow close in the same call.
+			if contract.Ablated(contract.AblateWait) || contract.Ablated(contract.AblateBatching) {
 				return nil, axInvalid(path, "close must be the last step: a closed window cannot take later input",
 					"").withRule(contract.ArgumentRuleCloseNotLast).withFix(axSet("actions", items[:index]))
 			}
@@ -419,9 +421,18 @@ func decodeAXAction(object map[string]any, path string) (axBatchAction, *axArgEr
 		} else {
 			message = "action needs type: " + strings.Join(contract.PublishedAXActionTypes(), ", ")
 		}
-		err := axInvalid(path+".type", message, axActionShapeHint(object))
+		hint := axActionShapeHint(object)
+		verb := actionType
+		if !hasType {
+			verb, _ = object["action"].(string)
+		}
+		if axAblatedActionType(verb) {
+			// The tool description sends a removed wait to a fresh read.
+			hint = axMinimalCalls[contract.AXModeObserve]
+		}
+		err := axInvalid(path+".type", message, hint)
 		switch {
-		case actionType == "settle":
+		case actionType == "settle" && !axAblatedActionType("wait"):
 			err.Message += `; use type "wait" with settle:true after an input step in the same call`
 			err.Hint = ""
 			err.fix = []axEdit{axSet(path+".type", "wait"), axSet(path+".settle", true)}
@@ -615,6 +626,11 @@ func axActionShapeHint(object map[string]any) string {
 	}
 	if synonym, known := axActionVerbSynonyms[verb]; known {
 		verb = synonym
+	}
+	// An action type removed by an ablation has no AX equivalent; guessing
+	// one from its fields would turn a wait for "Saved" into typing it.
+	if axAblatedActionType(verb) {
+		return ""
 	}
 	if !contract.ContainsString(contract.PublishedAXActionTypes(), verb) {
 		switch {

@@ -271,6 +271,11 @@ func (s *Service) axBatchFocusChanged(
 	if argErr == nil && focus.handle == context.WindowHandle {
 		return ToolCallResult{}, false
 	}
+	if shadowGuard("ax", "batch_window", "focus_left_bound_window", map[string]any{
+		"window_ref": context.WindowRef, "next_action_index": index,
+	}) {
+		return ToolCallResult{}, false
+	}
 	now := "no window has focus"
 	if argErr == nil {
 		now = fmt.Sprintf("focus is now on %s %s (%s)", focus.ref, strconv.Quote(focus.title), focus.appName)

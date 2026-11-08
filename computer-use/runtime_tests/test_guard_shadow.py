@@ -72,32 +72,81 @@ class AXGuardShadowTests(GuardLogMixin, unittest.TestCase):
         self.assertIsNone(resolved)
         self.assertEqual(self.guard_log(), [])
 
-    def semantic_refusal(self, code, node):
+    def semantic_refusal(self, code, node, path=(0, 4), role="push button", app=None,
+                         combo=None, edit_identity=None):
         refused = runtime.OperationFailure(
             code + " selector='button:Save'; no input was emitted.",
             failure_code=code, failure_phase="precondition", input_events_emitted=False)
-        target = {"selector": "button:Save", "runtimeId": [0, 4]}
-        with mock.patch.object(element_resolver, "resolve_path", return_value=node), \
+        target = {"selector": "button:Save", "runtimeId": list(path)}
+        with mock.patch.object(element_resolver, "resolve_path", return_value=node) as resolve, \
                 mock.patch.object(element_resolver, "state_value", return_value=None), \
-                mock.patch.object(element_resolver, "node_role", return_value="push button"), \
+                mock.patch.object(element_resolver, "node_role", return_value=role), \
                 mock.patch.object(element_resolver, "node_name", return_value="Cancel"), \
-                mock.patch.object(element_resolver, "relative_frame", return_value=None):
-            return element_resolver.shadow_semantic_refusal(object(), 0, None, target, refused)
+                mock.patch.object(element_resolver, "relative_frame", return_value=None), \
+                mock.patch.object(element_resolver, "window_bounds", return_value=(1, 2, 3, 4)), \
+                mock.patch.object(element_resolver, "gtk_combo_partner", return_value=combo), \
+                mock.patch.object(element_resolver, "combo_edit_target", return_value=object()), \
+                mock.patch.object(element_resolver, "combo_edit_identity", return_value=edit_identity):
+            self.resolve_path = resolve
+            return element_resolver.shadow_semantic_refusal(
+                app or object(), 0, "main", (0, 0, 9, 9), target, refused)
 
     def test_semantic_identity_refusal_falls_back_to_the_snapshot_path(self):
         node = object()
         self.assertIsNone(self.semantic_refusal("semantic_target_not_found", node))
+        # The full arm does not read the tree for a shadow it will not use.
+        self.resolve_path.assert_not_called()
         self.ablate_guard()
         for code in ("semantic_target_not_found", "semantic_target_ambiguous", "stale_element_ref"):
-            resolved, record = self.semantic_refusal(code, node)
+            resolved, record, window, bounds = self.semantic_refusal(code, node)
             self.assertIs(resolved, node)
             self.assertEqual(record["runtimeId"], [0, 4])
+            self.assertEqual((window, bounds), ("main", (0, 0, 9, 9)))
         self.assertEqual([entry["reason"] for entry in self.guard_log()],
                          ["semantic_target_not_found", "semantic_target_ambiguous", "stale_element_ref"])
         # Refusals that are not identity checks, and paths without a node, stay.
         self.assertIsNone(self.semantic_refusal("observation_incomplete", node))
         self.assertIsNone(self.semantic_refusal("stale_element_ref", None))
         self.assertEqual(len(self.guard_log()), 3)
+
+    def test_shadowed_target_keeps_its_own_window(self):
+        self.ablate_guard()
+        dialog = object()
+        app = mock.Mock()
+        app.get_child_at_index.return_value = dialog
+        _node, _record, window, bounds = self.semantic_refusal(
+            "stale_element_ref", object(), path=(2, 1), app=app)
+        app.get_child_at_index.assert_called_once_with(2)
+        self.assertEqual((window, bounds), (dialog, (1, 2, 3, 4)))
+
+    def test_shadowed_combo_keeps_its_edit_partner(self):
+        self.ablate_guard()
+        identity = {"providerBusName": ":1.4", "providerObjectPath": "/e", "processGeneration": "g"}
+        _node, record, _window, _bounds = self.semantic_refusal(
+            "stale_element_ref", object(), role="toggle button", combo=object(),
+            edit_identity=identity)
+        self.assertEqual(record["controlType"], "combo box")
+        self.assertEqual(record["editTarget"], identity)
+
+    def test_select_end_identity_refusal_is_logged_and_let_through(self):
+        refused = runtime.OperationFailure(
+            "stale_element_ref; no input was emitted.", failure_code="stale_element_ref",
+            failure_phase="precondition", input_events_emitted=False)
+        window, end = object(), object()
+        app = mock.Mock()
+        app.get_child_count.return_value = 1
+        app.get_child_at_index.return_value = window
+        operation = {}
+        action_input = {"to_target": {"runtimeId": [0, 7]}}
+        with mock.patch.object(ax_dispatch, "provider_object_path", return_value="/w"), \
+                mock.patch.object(ax_dispatch, "resolve_semantic_target", side_effect=refused), \
+                mock.patch.object(ax_dispatch, "shadow_semantic_refusal",
+                                  wraps=lambda *args: None if not guard_shadow.guards_shadowed()
+                                  else (end, {}, window, None)):
+            with self.assertRaises(runtime.OperationFailure):
+                ax_dispatch._resolve_select_end(app, operation, action_input, window, None)
+            self.ablate_guard()
+            self.assertIs(ax_dispatch._resolve_select_end(app, operation, action_input, window, None), end)
 
     def expected_window_mismatch(self):
         with mock.patch.object(ax_dispatch, "provider_bus_name", return_value=":1.9"), \

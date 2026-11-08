@@ -106,3 +106,10 @@ func shadowGuard(channel, guard, reason string, detail map[string]any) bool {
 	_, _ = file.Write(append(line, '\n'))
 	return true
 }
+
+// axAblatedActionType reports an AX action type that COMPUTER_USE_ABLATE
+// removed from the published contract.
+func axAblatedActionType(verb string) bool {
+	return contract.ContainsString(contract.AXActionTypes, verb) &&
+		!contract.ContainsString(contract.PublishedAXActionTypes(), verb)
+}

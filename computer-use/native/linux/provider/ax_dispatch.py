@@ -524,10 +524,10 @@ def _resolve_action_target(app, operation, operation_kind, action_input):
             )
         except OperationFailure as refused:
             shadowed = shadow_semantic_refusal(
-                app, window_index, bounds, semantic_target, refused)
+                app, window_index, window, bounds, semantic_target, refused)
             if shadowed is None:
                 raise
-            element, element_record = shadowed
+            element, element_record, window, bounds = shadowed
     elif semantic_target is None and action_input.get("window_centre"):
         element = None
     elif semantic_target is None:
@@ -564,10 +564,17 @@ def _resolve_select_end(app, operation, action_input, window, bounds):
             failure_phase="precondition",
             input_events_emitted=False,
         )
-    to_element, _record, _note, to_window, _bounds = resolve_semantic_target(
-        app, window_index, window, bounds, to_target,
-        operation.get("known_refs"), operation,
-    )
+    try:
+        to_element, _record, _note, to_window, _bounds = resolve_semantic_target(
+            app, window_index, window, bounds, to_target,
+            operation.get("known_refs"), operation,
+        )
+    except OperationFailure as refused:
+        shadowed = shadow_semantic_refusal(
+            app, window_index, window, bounds, to_target, refused)
+        if shadowed is None:
+            raise
+        to_element, _record, to_window, _bounds = shadowed
     if provider_object_path(to_window) != window_path:
         raise OperationFailure(
             "select_invalid_range: to_ref is in a different window than ref; "

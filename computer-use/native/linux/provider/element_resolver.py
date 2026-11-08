@@ -14,20 +14,24 @@ from .foundation import (
 )
 from .node_geometry import extents
 from .primitives import name_fingerprint
-from .guard_shadow import shadow_guard
+from .guard_shadow import guards_shadowed, shadow_guard
 
 from .ax_node_properties import (
     accessible_id,
     parse_text_limit,
 )
 from .ax_records import (
+    combo_edit_identity,
+    combo_edit_target,
     effective_name,
     effective_role,
+    gtk_combo_partner,
 )
 
 from .x11_windows import (
     main_window,
     relative_frame,
+    window_bounds,
 )
 from .primitives import semantic_text_key
 from .semantic_window_candidates import (
@@ -550,12 +554,17 @@ _SHADOWED_TARGET_FAILURES = {
 }
 
 
-def shadow_semantic_refusal(app, window_index, bounds, target, refused):
-    """Return (node, record) at the target's snapshot path, or None.
+def shadow_semantic_refusal(app, window_index, window, bounds, target, refused):
+    """Return (node, record, window, bounds) at the target's snapshot path.
 
-    None keeps the refusal: the guard ablation is off, the refusal is not an
-    identity check, or no live node is left on the path.
+    The window and bounds are those of the top-level window that holds the
+    node, as a resolved target has. None keeps the refusal: the guard
+    ablation is off, the refusal is not an identity check, or no live node is
+    left on the path.
     """
+    # The full arm must not pay for the AT-SPI reads below.
+    if not guards_shadowed():
+        return None
     if getattr(refused, "failure_code", None) not in _SHADOWED_TARGET_FAILURES:
         return None
     paths = [target.get("runtimeId") or []]
@@ -566,17 +575,31 @@ def shadow_semantic_refusal(app, window_index, bounds, target, refused):
         node = resolve_path(app, path)
         if node is None or state_value(node, Atspi.StateType.DEFUNCT) is True:
             continue
+        role = node_role(node)
         if not shadow_guard(
             "ax", "target_identity", refused.failure_code,
             message=str(refused), selector=target.get("selector"), path=list(path),
-            live={"role": node_role(node), "name": node_name(node)},
+            live={"role": role, "name": node_name(node)},
         ):
             return None
+        node_window, node_bounds = window, bounds
+        if path[0] != window_index:
+            top = safe(lambda: app.get_child_at_index(path[0]))
+            if top is not None:
+                node_window = top
+                node_bounds = window_bounds(app, path[0], top)
         record = {
             "runtimeId": list(path),
-            "controlType": node_role(node),
+            "controlType": role,
             "name": node_name(node),
-            "frame": safe(lambda: relative_frame(node, bounds)),
+            "frame": safe(lambda: relative_frame(node, node_bounds)),
         }
-        return node, record
+        # A projected combo edits through its partner, as a scanned record
+        # says (ax_records.py).
+        if role == "combo box" or gtk_combo_partner(node, role) is not None:
+            record["controlType"] = "combo box"
+            identity = combo_edit_identity(combo_edit_target(node))
+            if identity is not None:
+                record["editTarget"] = identity
+        return node, record, node_window, node_bounds
     return None

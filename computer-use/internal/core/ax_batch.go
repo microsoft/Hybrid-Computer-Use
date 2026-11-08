@@ -441,7 +441,8 @@ func (s *Service) axBatchRun(
 				observationSummary = "Preparation may have changed state or may complete later. " +
 					"Stop; no recovery observation, wait or later action was attempted."
 			}
-			if finalObservationReturned {
+			// Under diff the act result drops the observation it read.
+			if finalObservationReturned && !contract.Ablated(contract.AblateDiff) {
 				observationSummary = "A fresh current-state observation follows. " +
 					"It does not prove which action caused that state."
 				if result.StructuredContent["action_outcome"] == "not_executed" {
