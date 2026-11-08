@@ -233,7 +233,12 @@ guides, `--instructions-file ""` and `--code-mode` are refused with
 `--ablate`, because they can still describe a removed mechanism. With `guard`
 removed, the server logs the guard decisions in the guest, and the runner
 copies the log to `guard.jsonl` in the result directory. Without `--ablate`
-the harness configurations do not change.
+the harness configurations do not change. The preflight probe also checks
+that the server applies the ablation: it sends one call per removed
+mechanism and requires each to be refused, and it requires the server to
+refuse an unknown `COMPUTER_USE_ABLATE` value. A build without the switches
+therefore fails preparation instead of running full HCU under an ablation
+label. `meta.json` records the SHA-256 of the MCP binary.
 
 ## Run a panel
 
@@ -242,7 +247,9 @@ file; omitted paths default to the repository's `artifacts/`, `runs/`,
 `assets/` and `instructions/`. See
 [`configs/osworld-v1-codex-queue.example.json`](../configs/osworld-v1-codex-queue.example.json)
 for the 20-task V1 panel. [`configs/ablation/`](../configs/ablation/) holds
-the same panel for each mechanism-ablation group.
+the same panel for each mechanism-ablation group. Groups that share one
+gateway must share its `--out` file: set the same `token_log` in each config.
+A task fails before its agent starts when the gateway writes another file.
 
 | Key | Meaning |
 | --- | --- |

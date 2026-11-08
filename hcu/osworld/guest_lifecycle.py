@@ -29,7 +29,7 @@ from hcu.osworld.runtime import (
 )
 from hcu.osworld.staging import GUEST_AGENT_BINARIES, TaskRun, runtime_uploads
 from hcu.osworld.task import task_value
-from hcu.osworld.usage import check_gateway_budget
+from hcu.osworld.usage import check_gateway_budget, check_gateway_token_log
 from desktop_env.cache import run_scoped_cache_dir
 from desktop_env.desktop_env import DesktopEnv
 
@@ -162,6 +162,7 @@ def prepare_guest(run: TaskRun, env: DesktopEnv) -> str:
     )
     meta["gateway_health"] = health.get("output", "").strip()
     check_gateway_budget(meta["gateway_health"], args.max_model_calls)
+    check_gateway_token_log(meta["gateway_health"], run.token_log)
 
     agent_version = (
         f"{shlex.quote(GUEST_GEMINI_NODE)} {shlex.quote(GUEST_GEMINI_CLI)}"

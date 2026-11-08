@@ -2,6 +2,7 @@
 
 import argparse
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -277,6 +278,7 @@ def test_ablation_run_gives_the_agent_ablated_guides(runner, tmp_path, agent):
         assert run.base_instructions_copy.read_text(encoding="utf-8").endswith(hybrid)
     assert "COMPUTER_USE_ABLATE" in run.config_path.read_text(encoding="utf-8")
     assert run.meta["ablate"] == ["wait", "diff"]
+    assert run.meta["mcp_binary_sha256"] == hashlib.sha256(run.mcp_binary.read_bytes()).hexdigest()
     assert run.meta["instructions_file"] == str(guides / "hybrid.md")
 
 
