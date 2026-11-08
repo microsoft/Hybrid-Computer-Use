@@ -38,7 +38,7 @@ WORDS = {
              r"`wait`"],
     "diff": [r"\bdiffs?\b", r"(?m)^effect:", r"(?m)^windows:", r"report what changed",
              r"reports the selection", r"reports what is now", r"reports each target",
-             r"(?i)returned state", r"says what was seen"],
+             r"checked=false→true", r"listed as `opened`"],
     "batching": [r"ordered steps", r"into one `act`", r"(?i)start the batch with"],
     "guard": [],
 }

@@ -250,12 +250,9 @@ func (s *Service) axAct(
 	request *axRequest,
 	obs observation,
 ) ToolCallResult {
-	if contract.Ablated(contract.AblateDiff) {
-		return s.axActWithoutFeedback(request, obs)
-	}
 	result := s.axBatchDecoded(
 		request.actions,
-		obs,
+		axActObservation(obs),
 		request.windowRef,
 	).withEvidenceScope("delivery_or_local_ui")
 	return WithAXModeEvidence(result, contract.AXModeAct)

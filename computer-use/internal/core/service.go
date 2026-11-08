@@ -22,9 +22,6 @@ type failedObservationEntry struct {
 type observationLedger struct {
 	lastComplete map[string]*AppSnapshot
 	lastFullTree map[string]bool
-	// hidden is set while an act runs whose observations the model never
-	// receives (the diff ablation); they are then not recorded as delivered.
-	hidden bool
 }
 
 // DesktopState is shared by every caller of one desktop: the provider, the

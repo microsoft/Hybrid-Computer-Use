@@ -85,12 +85,9 @@ _WAIT_TIMEOUT = """\
   not resend the same batch.
 """
 
-_WINDOW_CHANGED_READ = """ Read the
-  returned state and send only what remains."""
-
-_WAIT_TIMEOUT_READ = """ The message says what was seen instead, or that the
-  state could not be read. Read the returned state and revise the plan; do
-  not resend the same batch."""
+# The wait advice names report lines that the diff ablation removes.
+_REPORT_NEEDS_NO_WAIT = """ A checkbox that shows `checked=false→true`, or a dialog
+  listed as `opened`, needs no wait."""
 
 _APP_STARTING_WAIT = """if the application is still starting, wait once for
   its window with `{"mode":"act","actions":[{"type":"wait","window":"..."}]}`;
@@ -115,8 +112,7 @@ PASSAGES: dict[str, tuple[tuple[str, str], ...]] = {
     "diff": (
         ("hybrid.md", _ACT_REPORT),
         ("hybrid.md", _SELECT_READBACK),
-        ("hybrid.md", _WINDOW_CHANGED_READ),
-        ("hybrid.md", _WAIT_TIMEOUT_READ),
+        ("hybrid.md", _REPORT_NEEDS_NO_WAIT),
     ),
     "guard": (),
 }
@@ -137,8 +133,8 @@ STATEMENTS = {
   `observe` or `find`.
 """,
     "diff": """\
-- An `act` result reports only whether input was sent and how many steps
-  completed. To see what changed, use `observe`, `find`, or a GUI screenshot.
+- An `act` result shows the whole current tree of its window after its
+  actions instead of a report of what changed.
 """,
 }
 # With both batching and wait ablated, an act holds one step and no waits.

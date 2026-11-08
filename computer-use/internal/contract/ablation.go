@@ -18,8 +18,14 @@ import (
 //     still surround it. GUI batches are unchanged.
 //   - wait: AX acts take no wait steps. The tools' own stabilization after
 //     input is unchanged.
-//   - diff: an AX act returns only its execution evidence, not the effect
-//     and windows report, the diff or any other observation.
+//   - diff: an AX act returns its execution evidence and the whole current
+//     tree of its window, as observe "tree" does, without the effect and
+//     windows report, the diff, or notes that compare with an earlier read.
+//     observe always returns the tree, never "unchanged". The tree is read
+//     with the same post-action stabilization as a diff. Two things stay:
+//     effect_unknown in the evidence (whether input had a verified effect
+//     is execution evidence, not a diff) and a settle wait step's message
+//     (it belongs to wait).
 //   - guard: the target and layout guards still decide, but only log the
 //     input they would have stopped (COMPUTER_USE_GUARD_LOG) and let it
 //     through. Only the Linux provider implements this.
@@ -115,8 +121,8 @@ func PublishedAXActionTypes() []string {
 }
 
 // PublishedObserveValues is the observe list the schema publishes and the
-// decoder accepts. Without diff, act takes no observe field, so diff and
-// none, which only act uses, are gone too.
+// decoder accepts. Without diff, act takes no observe field (it always
+// returns the tree), so diff and none, which only act uses, are gone too.
 func PublishedObserveValues() []string {
 	if !Ablated(AblateDiff) {
 		return ObserveValues

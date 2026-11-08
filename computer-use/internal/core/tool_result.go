@@ -268,13 +268,8 @@ func FinalizeForModel(name string, result ToolCallResult, structured bool) ToolC
 func prepareModelEvidence(name string, result ToolCallResult) ToolCallResult {
 	switch name {
 	case contract.PublicToolAX:
-		actFeedbackHidden := contract.Ablated(contract.AblateDiff) &&
-			result.StructuredContent["ax_mode"] == contract.AXModeAct
 		result = EnforceAXResponseBudget(result)
 		result = PrepareAXEvidence(result)
-		if actFeedbackHidden {
-			result = withoutAXActFeedback(result)
-		}
 	case contract.PublicToolGUI:
 		result = prepareGUIEvidence(result)
 	}
