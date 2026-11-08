@@ -37,8 +37,9 @@ WORDS = {
              r"\bsettle\b(?!_ms)", r"timeout_ms", r"wait_timeout", r"waits with",
              r"`wait`"],
     "diff": [r"\bdiffs?\b", r"(?m)^effect:", r"(?m)^windows:", r"report what changed",
-             r"reports the selection", r"reports what is now", r"reports each target"],
-    "batching": [r"ordered steps", r"into one `act`"],
+             r"reports the selection", r"reports what is now", r"reports each target",
+             r"(?i)returned state", r"says what was seen"],
+    "batching": [r"ordered steps", r"into one `act`", r"(?i)start the batch with"],
     "guard": [],
 }
 
