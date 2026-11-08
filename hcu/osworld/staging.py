@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass, field
 import datetime
+import hashlib
 import json
 from pathlib import Path
 import time
@@ -396,6 +397,11 @@ def initial_meta(run: TaskRun, docker_runtime: dict) -> dict:
             else None
         ),
         "mcp_binary": str(run.mcp_binary),
+        # Identifies the build: every build reports the same version.
+        "mcp_binary_sha256": (
+            hashlib.sha256(run.mcp_binary.read_bytes()).hexdigest()
+            if run.mcp_binary.is_file() else None
+        ),
         "mcp_channels": args.channels or None,
         "ablate": list(run.ablate),
         "code_mode": bool(getattr(args, "code_mode", False)),
