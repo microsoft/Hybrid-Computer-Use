@@ -88,6 +88,10 @@ _WAIT_TIMEOUT = """\
 _WINDOW_CHANGED_READ = """ Read the
   returned state and send only what remains."""
 
+_WAIT_TIMEOUT_READ = """ The message says what was seen instead, or that the
+  state could not be read. Read the returned state and revise the plan; do
+  not resend the same batch."""
+
 _APP_STARTING_WAIT = """if the application is still starting, wait once for
   its window with `{"mode":"act","actions":[{"type":"wait","window":"..."}]}`;
   otherwise """
@@ -98,6 +102,7 @@ PASSAGES: dict[str, tuple[tuple[str, str], ...]] = {
     "batching": (
         ("hybrid.md", _PLAN_FROM_ONE_READ),
         ("hybrid.md", _ACT_EXAMPLES),
+        ("hybrid.md", "- `no_focused_window`: start the batch with `activate`.\n"),
     ),
     "wait": (
         ("hybrid.md", " or wait again"),
@@ -111,6 +116,7 @@ PASSAGES: dict[str, tuple[tuple[str, str], ...]] = {
         ("hybrid.md", _ACT_REPORT),
         ("hybrid.md", _SELECT_READBACK),
         ("hybrid.md", _WINDOW_CHANGED_READ),
+        ("hybrid.md", _WAIT_TIMEOUT_READ),
     ),
     "guard": (),
 }
