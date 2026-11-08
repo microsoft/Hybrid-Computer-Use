@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -167,6 +168,17 @@ func TestBatchingAblationAllowsOneInputStep(t *testing.T) {
 	if !strings.Contains(err.Hint, `{"type":"wait","window":"A"}`) || strings.Contains(err.Hint, "select") {
 		t.Fatalf("hint should keep the steps before the second input: %s", err.Hint)
 	}
+	// Input after close is refused as close-not-last, without suggesting a
+	// wait that would put a second input step in the call.
+	_, err = DecodeAXRequest(decodeTestArguments(t,
+		`{"mode":"act","actions":[{"type":"close","ref":"w1"},{"type":"click","ref":"r1"}]}`))
+	if err == nil || err.rule != contract.ArgumentRuleCloseNotLast ||
+		!strings.HasPrefix(err.Message, "close must be the last step") || strings.Contains(err.Hint, `"gone"`) {
+		t.Fatalf("input after close: %#v", err)
+	}
+	if focus := noFocusMessage(t); strings.Contains(focus, "batch") {
+		t.Fatalf("no-focus message: %s", focus)
+	}
 
 	t.Setenv(contract.AblationEnv, "batching,wait")
 	_, err = DecodeAXRequest(decodeTestArguments(t,
@@ -174,6 +186,20 @@ func TestBatchingAblationAllowsOneInputStep(t *testing.T) {
 	if err == nil || err.Message != "act takes one action per call; send the others in later calls" {
 		t.Fatalf("two actions without waits: %#v", err)
 	}
+}
+
+// noFocusMessage returns the no_focused_window message for a desktop where
+// no window has focus.
+func noFocusMessage(t *testing.T) string {
+	t.Helper()
+	backend := &recordingPlatformBackend{accessibilityResponse: &ProviderAccessibilityResult{
+		OK: true, Apps: editorApps(testWindow{testHandleReport, "Report - Editor", false}),
+	}}
+	_, err := NewServiceWithBackend(backend).resolveFocusedWindow()
+	if err == nil || err.Code != contract.AXCodeNoFocusedWindow {
+		t.Fatalf("want no_focused_window, got %#v", err)
+	}
+	return err.Message
 }
 
 func TestBatchingAblationKeepsGUIBatches(t *testing.T) {
@@ -190,6 +216,26 @@ func TestWaitAblationRemovesWaitSteps(t *testing.T) {
 	if err == nil || !strings.HasPrefix(err.Message, "type must be one of click, type, keypress, set_value, select, scroll, activate, close;") ||
 		strings.Contains(err.Hint, "wait") || err.path != "actions[0].type" {
 		t.Fatalf("wait step: %#v", err)
+	}
+	// A rejected wait points to a fresh read, never to an input action
+	// guessed from its fields.
+	for _, step := range []string{
+		`{"type":"wait","text":"Saved"}`,
+		`{"type":"wait","ref":"r1","gone":true}`,
+		`{"type":"wait","ref":"w1"}`,
+		`{"type":"wait","keys":["ENTER"]}`,
+	} {
+		_, err = DecodeAXRequest(decodeTestArguments(t, `{"mode":"act","actions":[`+step+`]}`))
+		if err == nil || err.Hint != axMinimalCalls[contract.AXModeObserve] {
+			t.Fatalf("%s: rejected wait got %#v", step, err)
+		}
+	}
+	_, err = DecodeAXRequest(decodeTestArguments(t, `{"mode":"act","actions":[{"action":"wait","text":"Saved"}]}`))
+	if err == nil || err.Hint != axMinimalCalls[contract.AXModeObserve] {
+		t.Fatalf("action=wait: %#v", err)
+	}
+	if text := (&axNoTreeWindowError{ref: "w2"}).Error(); strings.Contains(text, "wait") {
+		t.Fatalf("no-tree window text: %s", text)
 	}
 	_, err = DecodeAXRequest(decodeTestArguments(t,
 		`{"mode":"act","actions":[{"type":"close","ref":"w1"},{"type":"keypress","keys":["ENTER"]}]}`))
@@ -239,6 +285,50 @@ func TestDiffAblationReturnsOnlyExecutionEvidence(t *testing.T) {
 		"actions": []any{map[string]any{"type": "click", "ref": "r1"}}})
 	if err == nil || err.path != "observe" {
 		t.Fatalf("act with observe: %#v", err)
+	}
+}
+
+// Under diff, an act's error says how far input went but not what the act
+// read: no values, window list, new wN or promised observation.
+func TestDiffAblationErrorsCarryNoObservation(t *testing.T) {
+	s, backend := reportService(t, reportMain())
+	window, refs := reportObserve(t, s, "Interface", "Size")
+	context := &AXBatchContext{AppToken: "Editor"}
+	if message, _, _ := s.axBatchContinuityRecovery(context); !strings.Contains(message, window) {
+		t.Fatalf("full HCU names the current window: %s", message)
+	}
+	t.Setenv(contract.AblationEnv, contract.AblateDiff)
+	message, hint, current := s.axBatchContinuityRecovery(context)
+	if strings.Contains(message+hint, window) || hint != `{"mode":"apps"}` || current != window {
+		t.Fatalf("recovery under diff: %q %q %q", message, hint, current)
+	}
+	if lines := treeUnchangedReferenceLines(3); strings.Contains(lines[0], "diff") {
+		t.Fatalf("tree reference: %s", lines[0])
+	}
+
+	evidence := func(args map[string]any) map[string]any {
+		t.Helper()
+		result := FinalizeForModel(contract.PublicToolAX, s.callTool(contract.PublicToolAX, args), false)
+		var line map[string]any
+		if len(result.Content) != 1 || json.Unmarshal([]byte(result.Content[0].Text), &line) != nil {
+			t.Fatalf("want one evidence line: %s", ResultText(result))
+		}
+		return line
+	}
+	timedOut := evidence(map[string]any{"mode": "act", "actions": []any{
+		map[string]any{"type": "click", "ref": refs["Interface"]},
+		map[string]any{"type": "wait", "ref": refs["Size"], "value": "99", "timeout_ms": 200},
+	}})
+	if timedOut["code"] != contract.AXCodeWaitTimeout || strings.Contains(fmt.Sprint(timedOut), `"12"`) ||
+		strings.Contains(fmt.Sprint(timedOut), "observation") {
+		t.Fatalf("wait timeout under diff: %v", timedOut)
+	}
+	backend.loseReadback = true
+	lost := evidence(map[string]any{"mode": "act", "actions": []any{
+		map[string]any{"type": "click", "ref": refs["Interface"]},
+	}})
+	if lost["ok"] != false || strings.Contains(fmt.Sprint(lost["message"]), "observation follows") {
+		t.Fatalf("lost readback under diff: %v", lost)
 	}
 }
 

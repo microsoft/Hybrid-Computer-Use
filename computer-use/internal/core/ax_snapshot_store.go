@@ -116,9 +116,13 @@ func deliveredTreeKey(snapshot *AppSnapshot) string {
 // model's copy is the last full tree plus every diff delivered after it, so
 // the reference says where the state came from and how to get it again.
 func treeUnchangedReferenceLines(lineCount int) []string {
+	source := "last full tree plus later diffs"
+	if contract.Ablated(contract.AblateDiff) {
+		source = "the last full tree"
+	}
 	return []string{fmt.Sprintf(
 		"Tree unchanged: identical to the state of this window already "+
-			"delivered by an earlier result (last full tree plus later diffs), "+
+			"delivered by an earlier result ("+source+"), "+
 			"so its %d lines are not repeated; the rN refs shown there still "+
 			"apply. Call {\"mode\":\"observe\",\"observe\":\"full\"} "+
 			"to get the whole tree again.",

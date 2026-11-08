@@ -22,6 +22,10 @@ type axNoTreeWindowError struct {
 }
 
 func (err *axNoTreeWindowError) Error() string {
+	if contract.Ablated(contract.AblateWait) {
+		return err.ref + " has no accessibility tree. " +
+			"Read and operate it with GUI; AX can only activate or close this window."
+	}
 	return err.ref + " has no accessibility tree. " +
 		"Read and operate it with GUI; AX can only activate, " +
 		"close or wait for this window."

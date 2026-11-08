@@ -32,13 +32,18 @@ def guard_ablated():
     return "guard" in {name.strip() for name in names}
 
 
+def guards_shadowed():
+    """Report whether a stopped input would be logged and let through."""
+    return not _enforced and guard_ablated()
+
+
 def shadow_guard(channel, guard, reason, **detail):
     """Return True when the guard ablation lets the stopped input through.
 
     The decision is appended to the guard log first. Without the ablation
     nothing is written and the caller stops the input as before.
     """
-    if _enforced or not guard_ablated():
+    if not guards_shadowed():
         return False
     record = {
         "at": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())

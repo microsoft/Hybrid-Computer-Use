@@ -128,6 +128,15 @@ func (s *Service) stopAXBatchAtWait(
 	if unreadable && !strings.Contains(message, "could not be read") {
 		message += " (the state could not be read completely while waiting)"
 	}
+	// Without diff an act reports no observation; the wait's message would
+	// otherwise carry the values and windows it saw.
+	noFeedback := contract.Ablated(contract.AblateDiff)
+	if noFeedback {
+		message = fmt.Sprintf("wait_timeout: the wait at actions[%d] did not hold; the steps before it ran and none after it", index)
+		if unreadable {
+			message += " (the state could not be read completely while waiting)"
+		}
+	}
 	stopped := TextResult(message, true)
 	if len(waitNotes) > 0 {
 		stopped.Content = append([]ContentItem{{Type: "text", Text: strings.Join(waitNotes, "\n")}}, stopped.Content...)
@@ -149,6 +158,12 @@ func (s *Service) stopAXBatchAtWait(
 	}
 	if corrected, _ := waitResult.StructuredContent["wait_hint"].(string); corrected != "" {
 		hint = corrected
+	}
+	if noFeedback {
+		hint = `{"mode":"observe","window_ref":"` + FirstNonEmpty(context.WindowRef, "wN") + `"}`
+		if wait := actions[index].wait; wait != nil && wait.window != "" {
+			hint = `{"mode":"apps"}`
+		}
 	}
 	stopped.StructuredContent = map[string]any{
 		contract.AXPublicErrorCodeKey:   contract.AXCodeWaitTimeout,
@@ -267,6 +282,10 @@ func (s *Service) axBatchContinuityRecovery(context *AXBatchContext) (string, st
 	}
 	if ref := snapshot.publicWindowRef; ref != "" {
 		if entry, err := s.WindowRefRegistry.Resolve(ref, ""); err == nil && entry.WindowHandle == snapshot.WindowHandle {
+			if contract.Ablated(contract.AblateDiff) {
+				// The new window's wN is a windows report, which diff removes.
+				return "List current windows, inspect the intended window, then send only the remaining actions.", `{"mode":"apps"}`, ref
+			}
 			return "The latest read shows " + ref + ". Observe that window before sending only the remaining actions.",
 				axHintJSON(map[string]any{"mode": "observe", "window_ref": ref}), ref
 		}
@@ -296,8 +315,14 @@ func (s *Service) axWaitOnly(
 			var argErr *axArgError
 			focus, argErr = s.resolveFocusedWindow()
 			if argErr != nil {
-				argErr.Message = "a wait without ref or window_ref reads the focused window, and no window has focus; " +
-					"give window_ref, or wait for a window by title. Windows:" + strings.TrimPrefix(argErr.Message[strings.Index(argErr.Message, "Windows:"):], "Windows:")
+				// Only a missing focus lists the windows; an unreadable window
+				// list keeps its own code and message.
+				if index := strings.Index(argErr.Message, "Windows:"); index >= 0 {
+					argErr.Message = "a wait without ref or window_ref reads the focused window, and no window has focus; " +
+						"give window_ref, or wait for a window by title. " + argErr.Message[index:]
+				} else {
+					argErr.Message += "; a wait without ref or window_ref reads the focused window, so give window_ref"
+				}
 				argErr.Hint = `{"mode":"act","window_ref":"w1","actions":[{"type":"wait","text":"Saved"}]}`
 				return axArgErrorResult(argErr, len(actions))
 			}
