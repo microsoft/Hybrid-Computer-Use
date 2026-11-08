@@ -103,7 +103,9 @@ func (t *actReportTrace) after(s *Service, index int) *AppSnapshot {
 }
 
 // withActReport puts the report first in an act result. A call rejected
-// before any input gets no report: nothing happened.
+// before any input gets no report: nothing happened. Under the diff
+// ablation the report still decides target_effect_observed but is not
+// shown.
 func (s *Service) withActReport(
 	result ToolCallResult,
 	actions []axBatchAction,
@@ -158,6 +160,11 @@ func (s *Service) withActReport(
 	lines = append(lines, s.actWindowsLine(trace, result))
 	if verified && len(lines) > 1 {
 		result.StructuredContent["target_effect_observed"] = true
+	}
+	if contract.Ablated(contract.AblateDiff) {
+		// The diff ablation keeps the evidence the report decides, but
+		// not the report.
+		return result
 	}
 	result.Content = append(
 		[]ContentItem{{Type: "text", Text: strings.Join(lines, "\n")}},

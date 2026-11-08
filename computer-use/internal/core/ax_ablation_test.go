@@ -109,7 +109,7 @@ func TestAblatedDescriptionStatesTheChangedBehavior(t *testing.T) {
 	statements := map[string]string{
 		contract.AblateBatching: "act runs one input step with optional wait steps before or after it",
 		contract.AblateWait:     "act cannot pause for a later state; to check one, read again with observe or find.",
-		contract.AblateDiff:     "Its result reports only whether input was sent and how many steps completed",
+		contract.AblateDiff:     "Its result shows the whole current tree of its window after its actions instead of a report of what changed.",
 	}
 	for _, set := range ablationSets() {
 		t.Run("ablate="+set, func(t *testing.T) {
@@ -260,27 +260,95 @@ func continuityNotesForUnchanged(t *testing.T) []string {
 	return continuityNotes(previous, current)
 }
 
-func TestDiffAblationReturnsOnlyExecutionEvidence(t *testing.T) {
+// modelText is the text a model reads of an AX result.
+func modelText(result ToolCallResult) string {
+	texts := []string{}
+	for _, item := range FinalizeForModel(contract.PublicToolAX, result, false).Content {
+		if item.Type == "text" {
+			texts = append(texts, item.Text)
+		}
+	}
+	return strings.Join(texts, "\n")
+}
+
+// reportActUnder observes the report fixture, sets COMPUTER_USE_ABLATE to
+// set, and runs one act whose input applies change.
+func reportActUnder(t *testing.T, set string, change func(*reportBackend), act func(map[string]string) map[string]any, names ...string) (*Service, map[string]string, ToolCallResult) {
+	t.Helper()
 	s, backend := reportService(t, reportMain())
-	_, refs := reportObserve(t, s, "Interface")
-	t.Setenv(contract.AblationEnv, contract.AblateDiff)
-	backend.onAction = func(b *reportBackend) { b.checked = true }
-	result := FinalizeForModel(contract.PublicToolAX, s.callTool(contract.PublicToolAX, map[string]any{
-		"mode": "act", "actions": []any{map[string]any{"type": "click", "ref": refs["Interface"]}},
-	}), false)
-	if len(result.Content) != 1 {
-		t.Fatalf("want only the evidence line, got %d items: %s", len(result.Content), ResultText(result))
+	_, refs := reportObserve(t, s, names...)
+	t.Setenv(contract.AblationEnv, set)
+	backend.onAction = change
+	return s, refs, s.callTool(contract.PublicToolAX, act(refs))
+}
+
+func clickOn(name string, extra map[string]any) func(map[string]string) map[string]any {
+	return func(refs map[string]string) map[string]any {
+		args := map[string]any{"mode": "act", "actions": []any{map[string]any{"type": "click", "ref": refs[name]}}}
+		for key, value := range extra {
+			args[key] = value
+		}
+		return args
 	}
-	line := result.Content[0].Text
-	if line != `{"ok":true,"input_emitted":true,"completed":1,"requested":1}` {
-		t.Fatalf("evidence line %s", line)
+}
+
+// The full HCU must stay as it was: the act reports the effect, the windows
+// and a diff, and observe answers an unchanged tree by reference.
+func TestFullHCUActOutputIsUnchanged(t *testing.T) {
+	s, _, result := reportActUnder(t, "", func(b *reportBackend) { b.checked = true },
+		clickOn("Interface", nil), "Interface")
+	want := `{"ok":true,"input_emitted":true,"completed":1,"requested":1,"final_observation_kind":"diff",` +
+		`"final_observation_returned":true,"next_identical_observation_required":false,"observation_required":false}` + "\n" +
+		`effect: r1 checkbox "Interface" checked=false→true (only state flags changed in this window)` + "\n" +
+		"windows: no change\n\n" +
+		"app: \"Editor\"\nwindow: \"Report\" [ref=w1]\nax_diff:\n" +
+		` - <changed> checkbox "Interface" [checked=true] [ref=r1]` + "\n"
+	if got := modelText(result); got != want {
+		t.Fatalf("full act:\n%s\nwant:\n%s", got, want)
 	}
-	// The act's own read was never delivered, so observe returns the tree
-	// instead of calling it unchanged.
-	observed := ResultText(s.callTool(contract.PublicToolAX, map[string]any{"mode": "observe", "app": "Editor"}))
-	if strings.Contains(observed, "Tree unchanged") || !strings.Contains(observed, `"Interface"`) {
-		t.Fatalf("observe after a hidden act read:\n%s", observed)
+	observed := modelText(s.callTool(contract.PublicToolAX, map[string]any{"mode": "observe", "app": "Editor"}))
+	if !strings.Contains(observed, "Note: [state] semantic_state=unchanged") ||
+		!strings.Contains(observed, "Tree unchanged: identical to the state of this window already "+
+			"delivered by an earlier result (last full tree plus later diffs)") {
+		t.Fatalf("full observe:\n%s", observed)
 	}
+}
+
+// Under diff an act returns its evidence and the whole current tree of its
+// window, as observe "tree" does, without the report of what changed.
+func TestDiffAblationActReturnsTheWholeTree(t *testing.T) {
+	check := func(change func(*reportBackend)) (string, string) {
+		_, _, full := reportActUnder(t, "", change, clickOn("Interface", map[string]any{"observe": "tree"}), "Interface")
+		s, _, ablated := reportActUnder(t, contract.AblateDiff, change, clickOn("Interface", nil), "Interface")
+		text := modelText(ablated)
+		for _, removed := range []string{"effect:", "windows: no change", "ax_diff", "semantic_state", "visual_change", "ax_change"} {
+			if strings.Contains(text, removed) {
+				t.Fatalf("act under diff still has %q:\n%s", removed, text)
+			}
+		}
+		// The internally decided evidence is that of the full HCU.
+		for _, key := range []string{"target_effect_observed", "effect_unknown", "final_observation_kind"} {
+			if full.StructuredContent[key] != ablated.StructuredContent[key] {
+				t.Fatalf("%s: full %v, diff %v", key, full.StructuredContent[key], ablated.StructuredContent[key])
+			}
+		}
+		// The tree was delivered, so a later observe returns it again,
+		// never "unchanged".
+		observed := modelText(s.callTool(contract.PublicToolAX, map[string]any{"mode": "observe", "app": "Editor"}))
+		if strings.Contains(observed, "Tree unchanged") || strings.Contains(observed, "semantic_state") ||
+			!strings.Contains(observed, `checkbox "Interface"`) {
+			t.Fatalf("observe under diff:\n%s", observed)
+		}
+		return text, modelText(full)
+	}
+	text, full := check(func(b *reportBackend) { b.checked = true })
+	tree := text[strings.Index(text, "app: "):]
+	if !strings.HasPrefix(text, `{"ok":true,"input_emitted":true,"completed":1,"requested":1,"final_observation_kind":"tree"`) ||
+		!strings.Contains(tree, `checkbox "Interface" [checked=true]`) || !strings.HasSuffix(full, tree) {
+		t.Fatalf("act under diff:\n%s\nfull with observe tree:\n%s", text, full)
+	}
+	check(func(*reportBackend) {})
+
 	_, err := DecodeAXRequest(map[string]any{"mode": "act", "observe": "tree",
 		"actions": []any{map[string]any{"type": "click", "ref": "r1"}}})
 	if err == nil || err.path != "observe" {
@@ -288,66 +356,145 @@ func TestDiffAblationReturnsOnlyExecutionEvidence(t *testing.T) {
 	}
 }
 
-// Under diff, an act's error says how far input went but not what the act
-// read: no values, window list, new wN or promised observation.
-func TestDiffAblationErrorsCarryNoObservation(t *testing.T) {
-	s, backend := reportService(t, reportMain())
-	window, refs := reportObserve(t, s, "Interface", "Size")
-	context := &AXBatchContext{AppToken: "Editor"}
-	if message, _, _ := s.axBatchContinuityRecovery(context); !strings.Contains(message, window) {
-		t.Fatalf("full HCU names the current window: %s", message)
+// A window the act opened appears with its wN in the tree's window list.
+func TestDiffAblationTreeListsAnOpenedWindow(t *testing.T) {
+	_, _, result := reportActUnder(t, contract.AblateDiff, func(b *reportBackend) {
+		b.windows[0].active = false
+		b.windows = append(b.windows, reportWindow{
+			handle: reportDialogHandle, role: "dialog", title: "Insert Sheet", path: "/window/2", active: true,
+		})
+	}, clickOn("OK", nil), "OK")
+	text := modelText(result)
+	if !regexp.MustCompile(`(?m)^  - dialog "Insert Sheet" \[ref=w[0-9]+\]$`).MatchString(text) ||
+		strings.Contains(text, "opened") {
+		t.Fatalf("act under diff:\n%s", text)
 	}
-	t.Setenv(contract.AblationEnv, contract.AblateDiff)
-	message, hint, current := s.axBatchContinuityRecovery(context)
-	if strings.Contains(message+hint, window) || hint != `{"mode":"apps"}` || current != window {
-		t.Fatalf("recovery under diff: %q %q %q", message, hint, current)
-	}
-	if lines := treeUnchangedReferenceLines(3); strings.Contains(lines[0], "diff") {
-		t.Fatalf("tree reference: %s", lines[0])
-	}
+}
 
-	evidence := func(args map[string]any) map[string]any {
+// Error texts belong to other mechanisms (waits, postconditions, recovery)
+// and stay as in the full HCU; only the report of what changed goes.
+func TestDiffAblationErrorsKeepTheirMessages(t *testing.T) {
+	s, _ := reportService(t, reportMain())
+	reportObserve(t, s, "Interface")
+	context := &AXBatchContext{AppToken: "Editor"}
+	message, hint, current := s.axBatchContinuityRecovery(context)
+	t.Setenv(contract.AblationEnv, contract.AblateDiff)
+	if m, h, c := s.axBatchContinuityRecovery(context); m != message || h != hint || c != current {
+		t.Fatalf("recovery under diff: %q %q %q, full: %q %q %q", m, h, c, message, hint, current)
+	}
+	t.Setenv(contract.AblationEnv, "")
+
+	evidence := func(result ToolCallResult) map[string]any {
 		t.Helper()
-		result := FinalizeForModel(contract.PublicToolAX, s.callTool(contract.PublicToolAX, args), false)
 		var line map[string]any
-		if len(result.Content) != 1 || json.Unmarshal([]byte(result.Content[0].Text), &line) != nil {
-			t.Fatalf("want one evidence line: %s", ResultText(result))
+		if err := json.Unmarshal([]byte(strings.SplitN(modelText(result), "\n", 2)[0]), &line); err != nil {
+			t.Fatal(err)
 		}
 		return line
 	}
-	timedOut := evidence(map[string]any{"mode": "act", "actions": []any{
-		map[string]any{"type": "click", "ref": refs["Interface"]},
-		map[string]any{"type": "wait", "ref": refs["Size"], "value": "99", "timeout_ms": 200},
-	}})
-	if timedOut["code"] != contract.AXCodeWaitTimeout || strings.Contains(fmt.Sprint(timedOut), `"12"`) ||
-		strings.Contains(fmt.Sprint(timedOut), "observation") {
-		t.Fatalf("wait timeout under diff: %v", timedOut)
+	waitAct := func(refs map[string]string) map[string]any {
+		return map[string]any{"mode": "act", "actions": []any{
+			map[string]any{"type": "click", "ref": refs["Interface"]},
+			map[string]any{"type": "wait", "ref": refs["Size"], "value": "99", "timeout_ms": 200},
+		}}
 	}
-	backend.loseReadback = true
-	lost := evidence(map[string]any{"mode": "act", "actions": []any{
-		map[string]any{"type": "click", "ref": refs["Interface"]},
-	}})
-	if lost["ok"] != false || strings.Contains(fmt.Sprint(lost["message"]), "observation follows") {
-		t.Fatalf("lost readback under diff: %v", lost)
+	withTree := func(act func(map[string]string) map[string]any) func(map[string]string) map[string]any {
+		return func(refs map[string]string) map[string]any {
+			args := act(refs)
+			args["observe"] = "tree"
+			return args
+		}
+	}
+	_, _, full := reportActUnder(t, "", nil, withTree(waitAct), "Interface", "Size")
+	_, _, ablated := reportActUnder(t, contract.AblateDiff, nil, waitAct, "Interface", "Size")
+	if evidence(ablated)["code"] != contract.AXCodeWaitTimeout ||
+		fmt.Sprint(evidence(ablated)) != fmt.Sprint(evidence(full)) ||
+		!strings.Contains(fmt.Sprint(evidence(ablated)["message"]), `value is "12"`) ||
+		!strings.Contains(modelText(ablated), `textbox "Size"`) || strings.Contains(modelText(ablated), "effect:") {
+		t.Fatalf("wait timeout under diff:\n%s\nfull:\n%s", modelText(ablated), modelText(full))
+	}
+
+	lose := func(b *reportBackend) { b.loseReadback = true }
+	_, _, full = reportActUnder(t, "", lose, clickOn("Interface", map[string]any{"observe": "tree"}), "Interface")
+	_, _, ablated = reportActUnder(t, contract.AblateDiff, lose, clickOn("Interface", nil), "Interface")
+	if line := evidence(ablated); line["code"] != "effect_unknown" ||
+		fmt.Sprint(line) != fmt.Sprint(evidence(full)) ||
+		!strings.Contains(fmt.Sprint(line["message"]), "A fresh current-state observation follows") ||
+		!strings.Contains(modelText(ablated), `checkbox "Interface"`) || strings.Contains(modelText(ablated), "effect:") {
+		t.Fatalf("lost readback under diff:\n%s\nfull:\n%s", modelText(ablated), modelText(full))
 	}
 }
 
 func TestDiffAblationKeepsTheErrorOfAFailedAct(t *testing.T) {
-	s, _ := reportService(t, reportMain())
-	reportObserve(t, s, "Interface")
+	stale := func(map[string]string) map[string]any {
+		return map[string]any{"mode": "act", "actions": []any{map[string]any{"type": "click", "ref": "r999"}}}
+	}
+	_, _, full := reportActUnder(t, "", nil, stale, "Interface")
+	_, _, ablated := reportActUnder(t, contract.AblateDiff, nil, stale, "Interface")
+	if !ablated.IsError || modelText(ablated) != modelText(full) {
+		t.Fatalf("rejected act under diff:\n%s\nfull:\n%s", modelText(ablated), modelText(full))
+	}
+}
+
+// Notes that compare with an earlier read go; notes on the current state stay.
+func TestDiffAblationDropsChangeNotes(t *testing.T) {
+	notes := []string{
+		"[diagnostic snapshot_unchanged] same tree", "[pixels] persistent_change=false",
+		"No accessibility change observed: window title, tree, focus and selection match.",
+		"[text-attrs] Document text formatting changed", `[select] selected 3 chars in 1 elements, from "a" to "c"`,
+		"[diagnostic snapshot_busy] busy", "[expect] r2 value is \"12\"",
+		"The accessibility tree structure is unchanged, while accessibility text attributes changed (see the [text-attrs] note above).",
+		"[transition] A bounded no-input probe observed the transient window finish and returned the current application window.",
+		"[identity] The new top-level window was refreshed once without input; the current wN/rN refs below are actionable.",
+		"The set of top-level windows changed but no window took focus within 0.8s. The snapshot below may show a different window.",
+	}
+	full := modelFacingAXNotes(notes)
 	t.Setenv(contract.AblationEnv, contract.AblateDiff)
-	result := FinalizeForModel(contract.PublicToolAX, s.callTool(contract.PublicToolAX, map[string]any{
-		"mode": "act", "actions": []any{map[string]any{"type": "click", "ref": "r999"}},
-	}), false)
-	if len(result.Content) != 1 || !result.IsError {
-		t.Fatalf("want one evidence line for the error: %s", ResultText(result))
+	got := modelFacingAXNotes(notes)
+	want := []string{"[state] busy=true recovery=wait_then_observe", "[expect] r2 value is \"12\""}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("notes under diff %q, full %q", got, full)
 	}
-	var evidence map[string]any
-	if err := json.Unmarshal([]byte(result.Content[0].Text), &evidence); err != nil {
-		t.Fatal(err)
+	if len(full) <= len(got) {
+		t.Fatalf("full notes %q", full)
 	}
-	if evidence["ok"] != false || evidence["code"] == nil || evidence["message"] == nil {
-		t.Fatalf("error evidence %v", evidence)
+}
+
+// The whole tree an act returns under diff is read with the same post-action
+// stabilization as a diff: a value that arrives late is in it.
+func TestDiffAblationReadsTheTreeAfterLateContent(t *testing.T) {
+	for _, set := range []string{"", contract.AblateDiff} {
+		backend := &recordingPlatformBackend{
+			accessibilityResponses: []ProviderAccessibilityResult{
+				{OK: true, Snapshot: contentStabilizationSnapshot("v1", "Ready")},
+				{OK: true, Snapshot: contentStabilizationSnapshot("v1", "Ready")},
+				{OK: true, Snapshot: contentStabilizationSnapshot("v2", "Saved")},
+			},
+		}
+		service := NewServiceWithBackend(backend)
+		off := false
+		service.getAppState("Editor", nil, nil, nil, nil, &off, nil, contract.TreeViewWorking, "", nil)
+		t.Setenv(contract.AblationEnv, set)
+		obs := axActObservation(observation{mode: contract.ObserveDiff})
+		result := service.actionResult("Editor", AXServiceRequest{
+			App: "Editor", Action: axKeypressCommand{Key: "Tab"},
+			Observe: obs.resolvedMode(), IncludeScreenshot: &off, TreeView: contract.TreeViewWorking,
+		})
+		if result.StructuredContent["content_stabilized"] != true || !strings.Contains(ResultText(result), `"Saved"`) {
+			t.Fatalf("ablate=%q read the transient state: %v\n%s", set,
+				result.StructuredContent["content_stabilized"], ResultText(result))
+		}
+	}
+}
+
+// A verified close returns the current state, the absent window, not a diff.
+func TestDiffAblationClosedWindowIsCurrentState(t *testing.T) {
+	context := &AXBatchContext{WindowRef: "w3"}
+	full := ResultText(closedWindowFinalObservation(context, observation{mode: contract.ObserveTree}))
+	t.Setenv(contract.AblationEnv, contract.AblateDiff)
+	ablated := ResultText(closedWindowFinalObservation(context, observation{mode: contract.ObserveTree}))
+	if !strings.HasPrefix(full, "ax_diff:") || ablated != "window: null\nabsent_refs: [w3]" {
+		t.Fatalf("closed window under diff %q, full %q", ablated, full)
 	}
 }
 

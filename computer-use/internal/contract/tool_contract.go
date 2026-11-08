@@ -551,8 +551,8 @@ func publishedAXToolDescription() string {
 	}
 	if diff {
 		// The tools state how the ablated act behaves, as the guide does.
-		sentence += " Its result reports only whether input was sent and how many steps completed; " +
-			"see what changed with observe, find, or GUI."
+		sentence += " Its result shows the whole current tree of its window after its " +
+			"actions instead of a report of what changed."
 	}
 	text := strings.Replace(axToolDescription, axActFullSentence, sentence, 1)
 	text = strings.Replace(text, axActFullExample, example, 1)

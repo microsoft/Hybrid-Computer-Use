@@ -14,48 +14,40 @@ import (
 // Behavior of the mechanism ablations in the AX service; contract/ablation.go
 // says what each one removes.
 
-// axActWithoutFeedback runs an act for the diff ablation. The batch runs
-// exactly as with diff, including the post-action reads that time its
-// return, but the model receives none of what those reads found:
-// withoutAXActFeedback keeps only the execution evidence. The reads are not
-// recorded as delivered, so a later observe compares with what the model
-// actually saw and never answers "unchanged" from a hidden read.
-func (s *Service) axActWithoutFeedback(request *axRequest, obs observation) ToolCallResult {
-	s.observations.hidden = true
-	defer func() { s.observations.hidden = false }()
-	result := s.axBatchDecoded(request.actions, obs, request.windowRef).
-		withEvidenceScope("delivery_or_local_ui")
-	// Drop images here, before callTool registers a delivered image as the
-	// GUI frame; the text goes in withoutAXActFeedback, after the evidence
-	// line has taken the error message from it.
-	kept := []ContentItem{}
-	for _, item := range result.Content {
-		if item.Type == "text" {
-			kept = append(kept, item)
-		}
+// axActObservation is the observation an act returns. Under the diff
+// ablation an act takes no observe field and always returns the whole
+// current working tree, as observe "tree" does; withActReport and
+// modelFacingAXNotes leave out what changed.
+func axActObservation(obs observation) observation {
+	if contract.Ablated(contract.AblateDiff) {
+		obs.mode = contract.ObserveTree
 	}
-	result.Content = kept
-	return WithAXModeEvidence(result, contract.AXModeAct)
+	return obs
 }
 
-// axActEvidenceFields are the public evidence fields an act keeps under the
-// diff ablation: whether it succeeded, the error, and how far input went.
-var axActEvidenceFields = append(append([]string{}, axPublicFields...),
-	"failure_phase", "partial_input_possible", "retry_same_request")
+// postActionReadStabilizes reports whether the read after an action waits
+// for late content and a replaced top-level window. A diff act does; under
+// the diff ablation the act's whole tree takes its place and is read the
+// same way, so the ablation changes what is shown, not when it is read.
+func postActionReadStabilizes(mode string) bool {
+	return mode == contract.ObserveDiff ||
+		(mode == contract.ObserveTree && contract.Ablated(contract.AblateDiff))
+}
 
-// withoutAXActFeedback reduces a prepared act result to its execution
-// evidence: no effect or windows lines, diff, tree, notes or selection
-// readback.
-func withoutAXActFeedback(result ToolCallResult) ToolCallResult {
-	kept := map[string]any{}
-	for _, key := range axActEvidenceFields {
-		if value, present := result.StructuredContent[key]; present {
-			kept[key] = value
+// axChangeNote reports a model-facing note that compares the state with an
+// earlier read: what the diff ablation removes from AX results.
+func axChangeNote(note string) bool {
+	for _, prefix := range []string{
+		"[state] semantic_state=unchanged", "[state] visual_change=", "[state] ax_change=",
+		"[text-attrs]", "[select] ", "[transition] ",
+		"The accessibility tree structure is unchanged", "The accessibility tree is unchanged",
+		"[identity] The new top-level window", "The set of top-level windows changed",
+	} {
+		if strings.HasPrefix(note, prefix) {
+			return true
 		}
 	}
-	result.StructuredContent = kept
-	result.Content = []ContentItem{}
-	return result
+	return false
 }
 
 // axCheckOneInputStep enforces the batching ablation: an act holds at most

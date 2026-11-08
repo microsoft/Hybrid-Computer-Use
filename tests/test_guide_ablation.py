@@ -52,3 +52,16 @@ def test_ablations_only_remove_text_besides_the_statements(ablations):
     # What remains is the original with characters removed, nothing added.
     remaining = iter(original)
     assert all(character in remaining for character in guide)
+
+
+def test_diff_guide_keeps_the_returned_state_and_drops_the_report():
+    guide = ablated_guide(source("hybrid.md"), "hybrid.md", ("diff",))
+    # An act returns the whole tree, so reading the returned state stays.
+    assert "Read the\n  returned state and send only what remains." in guide
+    assert "Read the returned state and revise the plan" in guide
+    assert "The message says what was seen instead" in guide
+    # The report of what changed, and advice that relies on it, goes.
+    for removed in ("then a diff", "effect: r58", "windows: opened", "checked=false→true",
+                    "listed as `opened`", "reports what is now"):
+        assert removed not in guide, removed
+    assert "shows the whole current tree of its window" in STATEMENTS["diff"]

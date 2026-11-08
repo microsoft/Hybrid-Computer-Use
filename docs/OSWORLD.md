@@ -221,7 +221,13 @@ The gateway defaults to the Docker bridge address at the agent's port;
 one channel only; `--instructions-file ""` runs without a profile.
 
 `--ablate` removes HCU mechanisms from the computer-use server: a
-comma-separated subset of `batching`, `wait`, `diff` and `guard`. The runner
+comma-separated subset of `batching`, `wait`, `diff` and `guard`. With
+`diff` removed, an `act` returns the whole current tree of its window in
+place of the change report and diff, and `observe` always repeats the tree.
+`effect_unknown` in the act's evidence and the message of a settle wait
+step are kept: the first is execution evidence and the second belongs to
+`wait`.
+The runner
 sets `COMPUTER_USE_ABLATE` in the MCP server environment of every harness and
 gives the agent copies of `instructions/base.md` and `instructions/hybrid.md`
 without the passages that describe the removed mechanisms. For each of
