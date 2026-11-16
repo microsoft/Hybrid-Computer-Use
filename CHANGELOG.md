@@ -20,6 +20,9 @@
   Named keys use their requested symbol, including keypad digits with NumLock
   off. Unknown keys report `invalid_argument` with accepted spelling examples
   before the key step takes focus or emits input.
+- Linux AX preserves references to controls hidden by an in-window modal dialog.
+  After the dialog closes, each action still checks the live target; a provider
+  rebuild requires a unique semantic match in the original runtime path and window.
 - AX reports text-value evidence for `type` steps without a ref, including
   unchanged or unreadable fields. A focus change alone does not confirm typing.
 - Linux AX checks focused-field readback after keyboard typing and reports

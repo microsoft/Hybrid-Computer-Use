@@ -197,7 +197,7 @@ func providerCoverageSummary(
 			switch reason {
 			case "filtered", "pressure":
 				hasProjection = true
-			case "collapsed_menu", "provider_children_not_rendered":
+			case "collapsed_menu", "provider_children_not_rendered", "modal_dialog":
 				hasExpandable = true
 			case "":
 				hasAcquisitionGap = true
