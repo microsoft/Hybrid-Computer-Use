@@ -589,9 +589,17 @@ A `select` step selects without typing or clicking:
   paragraphs.
 - On a combo box or list box, `"text"` chooses the option with that name. On
   an option of an open combo box popup, `{"ref":"rA"}` chooses that option.
-  A combo box that names itself after its choice, as in GTK and Qt, must
-  show the option afterwards; a Qt popup is committed by moving its current
+  GTK reads back the active item through the combo box's Selection interface.
+  Qt reads back the shown choice; a Qt popup commits by moving its current
   item to the option and pressing Return.
+
+On Linux, `set_value` on a native GTK combo box also chooses an option by
+name. Both actions use the combo box's Selection interface without opening
+the popup or taking keyboard focus. Failed selection or unreadable active
+state returns `effect_unknown` without a popup or keyboard retry. Combo
+boxes with an entry use the same selection path; use the entry's own ref
+for free-form text. LibreOffice's projected combo controls retain their
+separate editor and popup paths.
 
 The provider reads the selection back and reports it as a note, for example
 `[select] selected 4 cells A2:B3`. It fails with `effect_unknown` when it

@@ -11,6 +11,11 @@
   X-Resource can identify their owner. Windows without an accessibility tree
   support AX activation without pointer movement. Unverified owners produce
   an explicit inventory issue instead of an actionable reference.
+- Linux AX `set_value` and `select` choose native GTK combo box options through
+  accessibility without opening the popup or taking keyboard focus. Both actions
+  verify the active item and fail explicitly if selection cannot be confirmed.
+  Combo boxes with an entry use the same option selection; their entry refs
+  remain available for free-form text editing.
 
 ## 1.0.0
 

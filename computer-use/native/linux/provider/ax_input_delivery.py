@@ -33,6 +33,7 @@ from .input_primitives import (
     window_in_foreground,
 )
 from .actionability import (
+    application_toolkit,
     action_only_sets_state,
     ACTION_REPLY_TIMEOUT,
     do_action_by_index,
@@ -50,6 +51,8 @@ from .ax_target_notes import (
     addressing_channel,
 )
 from .ax_snapshot_diagnostics import is_dropdown_item
+from .ax_records import gtk_combo_partner
+from .ax_select import perform_select
 
 
 A11Y_CHANNEL = "[a11y]"
@@ -655,6 +658,12 @@ def _perform_set_value(
 ):
     if element is None:
         raise RuntimeError("unknown target ref")
+    if (node_role(element) == "combo box"
+            and application_toolkit(element) == "gtk"
+            and gtk_combo_partner(element, "combo box") is None):
+        perform_select({"text": action_input.get("value", "")}, window,
+                       element, element_record, None, notes, action_evidence)
+        return
     element, combo_editor = resolve_combo_editor(element, element_record)
     value = action_input.get("value", "")
     value_outcome = set_element_value_outcome(element, value)
