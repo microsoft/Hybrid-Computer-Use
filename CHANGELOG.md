@@ -22,6 +22,9 @@
   A page means five minimum range increments, not pixels; pages remain
   approximate, and a clamped boundary no-op is verified. AX results retain
   synthesis route notes and warnings without claiming successful effects.
+- Linux AX `set_value` reads back the requested control after keyboard fallback.
+  Unconfirmed values return `effect_unknown` and stop the batch, preserving input
+  evidence and warning against retyping text that may remain in an editor.
 
 - AX batch errors expose the failed action's reason and a failure-specific
   recovery hint while retaining batch progress and input evidence. No-input

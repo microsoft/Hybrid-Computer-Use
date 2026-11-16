@@ -709,6 +709,30 @@ def _perform_keypress(
     )
 
 
+def _verify_keyboard_value(element, value, evidence):
+    deadline = time.monotonic() + 1.0
+    while True:
+        after_text = read_all_text(safe(element.get_text_iface))
+        evidence["readback_sampled"] = True
+        evidence["readback_verified"] = (
+            after_text == value if after_text is not None else None)
+        if after_text == value:
+            return
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(0.02)
+    raise OperationFailure(
+        "effect_unknown: text was typed, but the requested control value "
+        "could not be confirmed. The text may still be in an uncommitted "
+        "editor. Do not retype the value. Inspect the control, complete any "
+        "pending edit through its normal commit action, then read it back.",
+        failure_code="effect_unknown",
+        failure_phase="readback",
+        input_events_emitted=True,
+        failure_subject="element",
+    )
+
+
 def _perform_set_value(
     action_input, window, element, element_record, notes, action_evidence
 ):
@@ -743,34 +767,26 @@ def _perform_set_value(
                 "fallback was not attempted. Read the control before retrying.",
                 failure_code="effect_unknown", failure_phase="readback",
                 input_events_emitted=True, failure_subject="element")
-        # A refused semantic write does not mean the control is read-only:
-        # Blink text inputs, for example, implement neither the AT-SPI
-        # Value nor the EditableText interface. As click and type_text do,
-        # fall back to synthesis: focus, select all, then type. The note
-        # must state that this path has no read-back confirmation and that
-        # keyboard synthesis is global, so delivery is not guaranteed.
         focus_target_element(
             window, element, element_record,
             "targeted set_value keyboard fallback",
         )
-        send_key("ctrl+a")
-        time.sleep(0.05)
-        text_route = send_text(value)
         action_evidence["route"] = "keyboard_synthesis"
         action_evidence["window_focus_verified"] = True
         action_evidence["target_focus_verified"] = True
         action_evidence["focus_verified"] = True
-        action_evidence["readback_verified"] = False
+        send_key("ctrl+a")
         action_evidence["input_emitted"] = True
+        time.sleep(0.05)
+        text_route = send_text(value)
+        _verify_keyboard_value(element, value, action_evidence)
         notes.append(
             addressing_channel(element_record)
             + SYNTHESIS
-            + "The AT-SPI value API refused this element (Blink and some toolkits "
-            "do not implement it on text inputs), so this fell back to focusing "
-            "the control, selecting all, and typing. There is no read-back "
-            "confirmation on this path, and keyboard synthesis is global — verify "
-            "from the tree that the control now holds what you wanted. {}".format(
-                UNVERIFIED_SYNTHESIS)
+            + "The AT-SPI value API did not confirm a change, so this fell back "
+            "to focusing the control, selecting all, and typing through global "
+            "keyboard synthesis. Exact readback confirmed the requested control "
+            "value. The application may still require OK/Apply."
             + (" " + text_route if text_route else "")
         )
     else:

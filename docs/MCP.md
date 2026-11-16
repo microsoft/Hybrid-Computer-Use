@@ -91,6 +91,16 @@ unexpected or unreadable text produces an `effect_unknown` result without
 retyping. If window activation changes the resolved field, AX stops before
 sending keys. Without a readable field, the typing effect remains unknown.
 
+After keyboard fallback, Linux AX `set_value` reads the requested control for
+up to one second. Only an exact value match confirms the write. Text in a
+separate editor and changes to focus or selection do not confirm the control
+value. If readback fails, AX returns `effect_unknown`, retains input evidence,
+and stops later batch steps. Do not retype that value. Inspect the control,
+complete any pending edit through its normal commit action, then read it back.
+AX does not automatically press Enter because Enter can submit a form or insert
+a newline in other controls. Control readback does not prove that the document
+was saved or that a dialog applied its changes.
+
 To use the input method, applications must inherit the desktop's
 input-method environment. Existing application processes may need a restart
 after that environment is corrected.
