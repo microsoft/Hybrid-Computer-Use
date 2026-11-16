@@ -275,7 +275,7 @@ func TestCrossWindowBatchFailsBeforeInput(t *testing.T) {
 			{actionType: "click", targetRef: secondRef},
 		}, nil,
 	)
-	if err == nil || !strings.Contains(err.Error(), "batch spans two windows") {
+	if err == nil || !strings.Contains(err.Error(), "not the current batch window") {
 		t.Fatalf("expected cross-window rejection, got %v", err)
 	}
 }

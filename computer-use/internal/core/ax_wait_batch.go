@@ -32,8 +32,9 @@ func (s *Service) preflightAXWaitRef(context *AXBatchContext, ref string) error 
 		return err
 	}
 	if context != nil && entry.WindowHandle != context.WindowHandle {
-		return fmt.Errorf("%s belongs to window %s, not the batch window %s; wait for it in its own act call",
-			ref, entry.LogicalWindowRef, context.WindowRef)
+		return axInvalid("", fmt.Sprintf("%s belongs to window %s, not the current batch window %s; activate that window before using its refs",
+			ref, entry.LogicalWindowRef, context.WindowRef),
+			"Use refs from the current window, or activate the other window before acting in it.")
 	}
 	return nil
 }
@@ -87,6 +88,10 @@ func (s *Service) rebindAfterWindowWait(
 		ProcessGeneration:  entry.ProviderWindowProcessGeneration,
 		Role:               entry.ProviderWindowRole,
 		Name:               entry.ProviderWindowName,
+	}
+	if context.report != nil {
+		context.report.appToken = context.AppToken
+		context.report.windowRef = context.WindowRef
 	}
 	// One read of the new window makes it the current state of its app, so
 	// the next step's window check and its diff start from that window.

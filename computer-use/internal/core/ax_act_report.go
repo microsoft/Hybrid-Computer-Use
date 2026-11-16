@@ -34,8 +34,10 @@ type actReportTrace struct {
 	observe     string
 	// start is the snapshot before any input; before[i] the snapshot just
 	// before action i ran.
-	start  *AppSnapshot
-	before map[int]*AppSnapshot
+	start       *AppSnapshot
+	before      map[int]*AppSnapshot
+	afterAction map[int]*AppSnapshot
+	stepWindows map[int]string
 }
 
 func newActReportTrace(obs observation) *actReportTrace {
@@ -61,9 +63,29 @@ func (t *actReportTrace) recordBefore(s *Service, index int) {
 	t.before[index] = s.currentSnapshot(t.appToken)
 }
 
+func (t *actReportTrace) recordWindow(index int, ref string) {
+	if t.stepWindows == nil {
+		t.stepWindows = map[int]string{}
+	}
+	t.stepWindows[index] = ref
+}
+
+func (t *actReportTrace) recordAfter(s *Service, index int) {
+	if t.afterAction == nil {
+		t.afterAction = map[int]*AppSnapshot{}
+	}
+	t.afterAction[index] = s.currentSnapshot(t.appToken)
+}
+
 // after returns the first snapshot read after action index, or nil when no
 // read happened after it.
 func (t *actReportTrace) after(s *Service, index int) *AppSnapshot {
+	if after, present := t.afterAction[index]; present {
+		if after == t.before[index] {
+			return nil
+		}
+		return after
+	}
 	next := -1
 	for candidate := range t.before {
 		if candidate > index && (next < 0 || candidate < next) {
@@ -606,6 +628,27 @@ func axReportWindows(snapshot *AppSnapshot) []axReportWindow {
 // actWindowsLine compares the application's windows before the first action
 // with those after the last one.
 func (s *Service) actWindowsLine(trace *actReportTrace, result ToolCallResult) string {
+	windows := map[string]bool{}
+	indices := make([]int, 0, len(trace.stepWindows))
+	for index, ref := range trace.stepWindows {
+		windows[ref] = true
+		indices = append(indices, index)
+	}
+	if len(windows) > 1 {
+		sort.Ints(indices)
+		steps := make([]string, 0, len(indices))
+		for _, index := range indices {
+			steps = append(steps, strconv.Itoa(index+1)+"="+trace.stepWindows[index])
+		}
+		final := trace.windowRef
+		if ref, ok := result.StructuredContent["final_observation_window_ref"].(string); ok && ref != "" {
+			final = ref
+		} else if snapshot := s.currentSnapshot(trace.appToken); snapshot != nil && snapshot.publicWindowRef != "" &&
+			result.StructuredContent["final_observation_returned"] == true {
+			final = snapshot.publicWindowRef
+		}
+		return axReportWindowsPrefix + "step targets " + strings.Join(steps, ", ") + "; final " + final
+	}
 	closedBound := result.StructuredContent["target_window_absent"] == true ||
 		result.StructuredContent["close_effect_verified"] == true
 	final := s.currentSnapshot(trace.appToken)

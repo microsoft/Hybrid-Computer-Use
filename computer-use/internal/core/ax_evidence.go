@@ -84,10 +84,19 @@ func compactAXBatchResult(value any) map[string]any {
 			}
 		}
 	}
+	windows := map[string]bool{}
+	for _, action := range rawActions {
+		if ref, ok := action["window_ref"].(string); ok && ref != "" {
+			windows[ref] = true
+		}
+	}
 	actions := make([]map[string]any, 0, len(rawActions))
 	for _, action := range rawActions {
 		entry := map[string]any{
 			"index": action["action_index"],
+		}
+		if len(windows) > 1 {
+			entry["window_ref"] = action["window_ref"]
 		}
 		actionability, _ := action["actionability"].(map[string]any)
 		if actionability != nil {

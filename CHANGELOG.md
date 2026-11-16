@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- AX `activate` with a window ref or title can switch the target within an
+  action batch. Later refs and ref-less steps use the selected window;
+  refs from other windows require another explicit activation. Each step
+  reports its window, and the final observation uses the last executed window.
 - AX batch errors expose the failed action's reason and a failure-specific
   recovery hint while retaining batch progress and input evidence. No-input
   argument and unsupported-operation failures use `invalid_argument`;

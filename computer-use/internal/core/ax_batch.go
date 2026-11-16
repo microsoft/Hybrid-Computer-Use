@@ -31,6 +31,9 @@ func (s *Service) executeAXBatchAction(
 	const noDeclaredTarget = ""
 	switch action.actionType {
 	case "activate", "close":
+		if window := s.noTreeWindowEntry(action.targetRef); window != nil {
+			return s.axNoTreeBatchAction(action.actionType, window)
+		}
 		return s.windowAction(
 			context.AppToken,
 			action.targetRef,
@@ -106,9 +109,6 @@ func (s *Service) executeAXBatchAction(
 	}
 }
 
-// axBatchDecoded runs decoded actions in one window. Window titles and
-// the focused window are resolved here, once, before any input; after that
-// the batch uses only the resolved wN.
 func (s *Service) axBatchDecoded(
 	actions []axBatchAction,
 	obs observation,
@@ -133,11 +133,8 @@ func (s *Service) axBatchDecoded(
 			"title %s -> %s %s (%s)", strconv.Quote(actions[index].title),
 			window.ref, strconv.Quote(window.title), window.appName))
 	}
-	if window := s.axNoTreeBatchWindow(actions, windowRef); window != nil {
-		return s.axNoTreeWindowBatch(actions, window, bindingNotes, requested)
-	}
 	var focus *axDesktopWindow
-	if windowRef == "" && !axBatchHasRef(actions) {
+	if windowRef == "" && !axBatchHasRef(actions[:axBatchWindowEnd(actions, 0)]) {
 		var argErr *axArgError
 		focus, argErr = s.resolveFocusedWindow()
 		if argErr != nil {
@@ -198,10 +195,11 @@ func (s *Service) axBatchRun(
 			return axBatchPreflightError(err, requested)
 		}
 	}
-	context, err := s.deriveAXBatchContext(windowRef, actions, focus)
+	contexts, err := s.deriveAXBatchContexts(windowRef, actions, focus)
 	if err != nil {
 		return axBatchPreflightError(err, requested)
 	}
+	context := contexts[0]
 	context.report = trace
 	trace.bind(s, context)
 	lastInput := -1
@@ -209,12 +207,6 @@ func (s *Service) axBatchRun(
 		if action.actionType != "wait" {
 			lastInput = index
 			continue
-		}
-		if action.wait.ref == "" {
-			continue
-		}
-		if err := s.preflightAXWaitRef(context, action.wait.ref); err != nil {
-			return axBatchPreflightError(fmt.Errorf("actions[%d].ref: %w", index, err), requested)
 		}
 	}
 
@@ -227,7 +219,7 @@ func (s *Service) axBatchRun(
 	// provider path runs keys back to back.
 	guarded := context.boundByFocus || lastInput < len(actions)-1
 	for _, action := range actions {
-		guarded = guarded || action.actionType == "wait"
+		guarded = guarded || action.actionType == "wait" || action.actionType == "activate"
 	}
 	if _, available := orderedInputBackend(s.platformBackend()); available && !guarded {
 		requests, err := providerOrderedInputRequestsFromPlan(context, executionPlan, actions)
@@ -245,16 +237,29 @@ func (s *Service) axBatchRun(
 	waitNotes := []string{}
 	for index := 0; index < len(actions); index++ {
 		action := actions[index]
+		if action.actionType == "activate" {
+			pending := context.windowsQueuedInputPending
+			context = contexts[index]
+			context.windowsQueuedInputPending = pending
+			context.report = trace
+			trace.appToken = context.AppToken
+			trace.windowRef = context.WindowRef
+		}
 		if action.actionType == "wait" {
 			// A wait step between actions: it sends no input.
 			trace.recordBefore(s, index)
+			trace.recordWindow(index, context.WindowRef)
 			waitResult := s.runAXWait(context, action.wait)
-			actionEvidence = append(actionEvidence, axWaitEvidenceEntry(index, waitResult))
+			waitEntry := axWaitEvidenceEntry(index, waitResult)
+			waitEntry["window_ref"] = context.WindowRef
+			actionEvidence = append(actionEvidence, waitEntry)
 			if !axPostconditionPassed(waitResult) {
 				return s.stopAXBatchAtWait(context, actions, index, waitResult, actionEvidence, waitNotes, obs)
 			}
 			waitNotes = append(waitNotes, firstLine(ResultText(waitResult)))
 			s.rebindAfterWindowWait(context, action.wait, waitResult)
+			waitEntry["window_ref"] = context.WindowRef
+			trace.recordWindow(index, context.WindowRef)
 			if index < len(actions)-1 && actions[index+1].actionType != "wait" {
 				if stopped, changed := s.axBatchContinuityStop(context, actions, index, actionEvidence, obs); changed {
 					return stopped
@@ -283,6 +288,7 @@ func (s *Service) axBatchRun(
 			context.settleBaseline = s.readAXSettleState(context, nil)
 		}
 		trace.recordBefore(s, index)
+		trace.recordWindow(index, context.WindowRef)
 		result := ToolCallResult{}
 		actionEntry := map[string]any{}
 		request, orderedRun := orderedRuns[index]
@@ -305,7 +311,9 @@ func (s *Service) axBatchRun(
 					s.renderAXBatchFinalObservation(execution.snapshot, execution.notes, obs))
 			}
 		} else {
-			if context.windowsQueuedInputPending && action.actionType == "type" && action.text != "" {
+			if err := s.validateAXActionWindow(context, action, index); err != nil {
+				result = axBatchPreflightError(err, requested)
+			} else if context.windowsQueuedInputPending && action.actionType == "type" && action.text != "" {
 				result = TextResult("Earlier queued input has not been confirmed processed; no text was sent. Observe and confirm focus and selection before sending text separately; do not repeat the earlier input.", true)
 				result.StructuredContent = map[string]any{
 					"failure_code": "desktop_input_failed", "failure_phase": "preparation",
@@ -325,9 +333,9 @@ func (s *Service) axBatchRun(
 					context.windowsQueuedInputPending = true
 				}
 			}
-			if !result.IsError ||
+			if s.noTreeWindowEntry(context.WindowRef) == nil && (!result.IsError ||
 				(action.actionType == "close" &&
-					axEvidenceReportsInputEmission(result.StructuredContent)) {
+					axEvidenceReportsInputEmission(result.StructuredContent))) {
 				result = s.recoverClosedWindowActionObservation(
 					context,
 					action,
@@ -336,6 +344,8 @@ func (s *Service) axBatchRun(
 				)
 			}
 			actionEntry = batchActionEvidenceEntry(index, action.actionType, result)
+			actionEntry["window_ref"] = context.WindowRef
+			trace.recordAfter(s, index)
 			context.settleBaseline.notePixelChange(result)
 		}
 		if result.IsError && index+1 < len(actions) && actions[index+1].actionType == "wait" &&
@@ -439,13 +449,18 @@ func (s *Service) axBatchRun(
 			// which then shows the state they waited for.
 			for next := index + 1; next < len(actions); next++ {
 				trace.recordBefore(s, next)
+				trace.recordWindow(next, context.WindowRef)
 				waitResult := s.runAXWait(context, actions[next].wait)
-				actionEvidence = append(actionEvidence, axWaitEvidenceEntry(next, waitResult))
+				waitEntry := axWaitEvidenceEntry(next, waitResult)
+				waitEntry["window_ref"] = context.WindowRef
+				actionEvidence = append(actionEvidence, waitEntry)
 				if !axPostconditionPassed(waitResult) {
 					return s.stopAXBatchAtWait(context, actions, next, waitResult, actionEvidence, waitNotes, obs)
 				}
 				waitNotes = append(waitNotes, firstLine(ResultText(waitResult)))
 				s.rebindAfterWindowWait(context, actions[next].wait, waitResult)
+				waitEntry["window_ref"] = context.WindowRef
+				trace.recordWindow(next, context.WindowRef)
 			}
 			if index < len(actions)-1 && obs.resolvedMode() != contract.ObserveNone &&
 				action.actionType != "close" {
@@ -478,6 +493,14 @@ func (s *Service) axBatchRun(
 			finalObservationReturned := obs.resolvedMode() != contract.ObserveNone
 			if value, ok := result.StructuredContent["final_observation_returned"].(bool); ok {
 				finalObservationReturned = value
+			}
+			if finalObservationReturned && contexts[0] != contexts[len(contexts)-1] {
+				if _, present := result.StructuredContent["final_observation_window_ref"]; !present {
+					if snapshot := s.currentSnapshot(context.AppToken); snapshot != nil &&
+						snapshot.publicWindowRef != "" {
+						result.StructuredContent["final_observation_window_ref"] = snapshot.publicWindowRef
+					}
+				}
 			}
 			observationRequired := !finalObservationReturned &&
 				obs.resolvedMode() != contract.ObserveNone

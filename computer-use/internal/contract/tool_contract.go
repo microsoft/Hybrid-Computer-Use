@@ -192,7 +192,7 @@ func axInputSchema() map[string]any {
 			"app": nonBlankString(AppArgumentHelp),
 			"window_ref": map[string]any{
 				"type": "string", "pattern": "^w[1-9][0-9]*$",
-				"description": "observe/find: window to read. act: omit when actions have refs, which name the window; it only sends ref-less keys/text to wN instead of the focused window.",
+				"description": "observe/find: window to read. act: omit when actions have refs, which name the window; otherwise sets the initial target for ref-less steps instead of the focused window.",
 			},
 			"scope": map[string]any{"type": "string", "enum": AXScopeValues, "description": "observe/find; default window."},
 			"observe": map[string]any{
@@ -218,7 +218,7 @@ func axInputSchema() map[string]any {
 						"type": map[string]any{"type": "string", "enum": AXActionTypes},
 						"ref": map[string]any{
 							"type": "string", "pattern": "^[rw][1-9][0-9]*$",
-							"description": "rN element; wN for activate/close. Omit for keys/text to the focused window.",
+							"description": "rN element; wN for activate/close. Omit for keys/text to the batch target (focused window by default).",
 						},
 						"to_ref": map[string]any{
 							"type": "string", "pattern": "^r[1-9][0-9]*$",
@@ -428,8 +428,12 @@ const axToolDescription = "Accessibility for application windows. Modes: " +
 	"apps lists confirmed windows (wN, title, app, active) and reports incomplete inventories; missing windows then remain unknown. observe returns the window tree with " +
 	"rN refs. find returns matching rN. act runs ordered steps, checks them before input, " +
 	"stops at the first failed step, and reports each target's change, windows " +
-	"opened/closed/focused, and a diff. Copy rN/wN exactly; stale refs fail. keypress/type " +
-	"without ref go to the focused window. select marks ref, its text substring, or ref..to_ref " +
+	"opened/closed/focused, and a diff. " +
+	"activate with wN or title switches the batch target for later refs and ref-less steps. " +
+	"Other-window refs fail until another activate selects their window. " +
+	"Each step reports its window; final observation uses the last executed window. " +
+	"Copy rN/wN exactly; stale refs fail. keypress/type " +
+	"without ref use the batch target, initially the focused window unless refs or window_ref select it. select marks ref, its text substring, or ref..to_ref " +
 	"(paragraphs, cells) and reports the selection read back. activate/close take a title substring or wN. " +
 	"A wait step sends no input and fails the batch on timeout: window (title, any app), " +
 	"query (as find), ref with value/state/text, or text; gone inverts. settle needs no " +

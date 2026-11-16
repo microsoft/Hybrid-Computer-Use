@@ -35,8 +35,13 @@ fits which state, and how to combine them.
 - Once the source, target, and operation are known, act. Further checks must
   answer a concrete blocker.
 - Plan from one read. After `observe` or `find`, put every action you can
-  already determine for that window into one `act`, while later refs and
-  focus remain valid. Split when the next action needs a new observation.
+  already determine into one `act`, while later refs and focus remain valid.
+  Split when the next action needs a new observation.
+- Use `activate` with a `wN` or title to switch the batch target.
+  Later refs and ref-less steps use that window. AX rejects refs from another
+  window without explicit `activate`; activate back before reusing the
+  previous window's refs. Each step reports its window; the final observation
+  uses the last executed window.
 - Every `act` result starts with what happened, then a diff:
 
 ```text

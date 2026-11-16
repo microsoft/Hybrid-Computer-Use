@@ -502,17 +502,20 @@ change canonical text, selectors, refs, or the response budget.
   steps. Structural argument errors reject the whole batch before input. The first step
   that fails stops the batch, and the result says how many ran.
 - The `rN` or `wN` refs name the window, so an `act` call with refs needs no
-  `window_ref`. `window_ref` only sends ref-less `keypress` and `type` to a
-  window other than the focused one. `keypress` and `type` without `ref` go
-  to the window that had focus when the call started.
+  `window_ref`. For ref-less steps, `window_ref` selects the initial batch
+  target; otherwise it defaults to the window focused when the call started.
 - `activate` and `close` accept a window title substring, resolved to one
-  `wN` before any input.
+  `wN` before any input. `activate` with a `wN` or title switches the batch
+  target. Later refs and ref-less steps use that window. AX rejects refs
+  from another window without an explicit `activate` first. To reuse refs
+  from the previous window, activate that window again; refs must still be
+  valid. Each step reports its window.
 - The decoder accepts `type.value` as `type.text` and non-empty
   `set_value.text` as `set_value.value`. Supplying both fields is rejected
   before input. The published schema advertises only the canonical names.
 - `observe` selects the evidence returned after the batch. The default is a
-  compact `diff`. An explicit `tree` returns the complete final window tree,
-  and `full` also returns a screenshot. These requests have the same
+  compact `diff` of the last executed window. An explicit `tree` returns
+  that window's complete tree, and `full` also returns a screenshot. These requests have the same
   meaning after a mutation, an ordered input sequence, or a final wait;
   evidence is captured after the wait finishes.
 - The removed `until` field, and its older spellings `postcondition` and
