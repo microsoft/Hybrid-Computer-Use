@@ -686,6 +686,20 @@ Every AX and GUI result starts with one JSON line: `ok`, and on failure
 `PublicErrorCodes` in `internal/contract/contract_describe.go` is the source
 of this table; the CLI exit statuses come from it too.
 
+An AX batch failure keeps the failed action's reason in `message` and its
+provider code in `failure_code`. The batch summary and per-action facts remain
+in the result. With no input or mutation uncertainty, provider precondition
+failures `invalid_argument` and `unsupported_action` use public code
+`invalid_argument`; `path` names the failed action. The recovery hint observes
+the target window to inspect its current values, or requests a GUI screenshot
+when the semantic operation is unsupported. An `input_failed` failure keeps
+public code `runtime_error` and requests observation of the target window.
+If these failures follow input or uncertain dispatch, the public code is
+`effect_unknown`; the hint does not replay the batch.
+An observation root whose provider identity disappeared, became ambiguous, or
+moved to another window reports `stale_ref`. Its hint observes the application
+without that root.
+
 Recovery follows the concrete failure, `input_emitted`, `completed`, and
 `retry_same_request`. A coordinate ownership failure requests a new GUI
 screenshot; refreshing an AX ref does not establish that the point belongs
@@ -698,6 +712,12 @@ permission-recovery instructions instead of another call. Restore the current
 provider's permissions and restart it before observing again. When capture
 fails after input, the result retains its partial or uncertain input evidence;
 restoring permission does not authorize replaying the actions.
+
+Invalid call shapes remain errors. `mode:"activate"` with actions shows the
+same call with `mode:"act"`. An action with `type:"settle"` shows a `wait`
+with `settle:true`, which must follow input in that call. AX has no
+`double_click` action: its `click` invokes an element once. The error explains
+the GUI double-click shape, with coordinates from a fresh desktop screenshot.
 
 ### GUI
 

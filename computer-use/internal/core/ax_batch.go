@@ -369,6 +369,12 @@ func (s *Service) axBatchRun(
 			if result.StructuredContent == nil {
 				result.StructuredContent = map[string]any{}
 			}
+			if hint := axBatchFailureHint(context, result.StructuredContent); hint != "" {
+				result.StructuredContent[contract.AXPublicErrorHintKey] = hint
+				if continuation, ok := result.StructuredContent["continuation"].(map[string]any); ok && hint == GUIScreenshotCall {
+					continuation["route"] = "GUI"
+				}
+			}
 			finalObservationReturned, _ :=
 				result.StructuredContent["final_observation_returned"].(bool)
 			preparationFailed := result.StructuredContent["focus_preparation"] != nil ||

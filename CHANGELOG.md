@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- AX batch errors expose the failed action's reason and a failure-specific
+  recovery hint while retaining batch progress and input evidence. No-input
+  argument and unsupported-operation failures use `invalid_argument`;
+  uncertain input remains `effect_unknown`.
+- Invalid AX activation, settle, and double-click calls explain the supported
+  call shapes without accepting aliases.
+- Missing, ambiguous, or moved provider-bound AX observation roots report `stale_ref` and
+  request a new application observation without the invalid root.
+
 - AX reports text-value evidence for `type` steps without a ref, including
   unchanged or unreadable fields. A focus change alone does not confirm typing.
 - Linux AX checks focused-field readback after keyboard typing and reports

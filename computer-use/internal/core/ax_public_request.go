@@ -166,6 +166,8 @@ func decodeAXCall(args map[string]any) (*axRequest, *axArgError) {
 			contract.CompactJSON(rawMode), `{"mode":"apps"}`)
 		if lower := strings.ToLower(mode); lower != mode && axModeFields[lower] != nil {
 			err.Hint, err.fix = "", []axEdit{axSet("mode", lower)}
+		} else if mode == "activate" && args["actions"] != nil {
+			err.Hint, err.fix = "", []axEdit{axSet("mode", contract.AXModeAct)}
 		}
 		return nil, err
 	}
@@ -378,7 +380,18 @@ func decodeAXAction(object map[string]any, path string) (axBatchAction, *axArgEr
 		} else {
 			message = "action needs type: " + strings.Join(contract.AXActionTypes, ", ")
 		}
-		return action, axInvalid(path+".type", message, axActionShapeHint(object))
+		err := axInvalid(path+".type", message, axActionShapeHint(object))
+		switch {
+		case actionType == "settle":
+			err.Message += `; use type "wait" with settle:true after an input step in the same call`
+			err.Hint = ""
+			err.fix = []axEdit{axSet(path+".type", "wait"), axSet(path+".settle", true)}
+		case actionType == "double_click":
+			err.Message += `; AX click invokes the element once; for a double click, call GUI with actions containing type "double_click" and x/y from a fresh full-desktop screenshot`
+			err.Hint = ""
+			err.fix = []axEdit{axSet(path+".type", "click")}
+		}
+		return action, err
 	}
 	action.actionType = actionType
 	aliased, aliasErr := axNormalizeTextAlias(object, actionType, path)

@@ -1809,6 +1809,91 @@
         "id": 54,
         "jsonrpc": "2.0"
       }
+    },
+    {
+      "request": {
+        "arguments": {
+          "actions": [
+            {
+              "title": "Report",
+              "type": "activate"
+            }
+          ],
+          "mode": "activate"
+        },
+        "tool": "AX"
+      },
+      "response": {
+        "id": 55,
+        "jsonrpc": "2.0",
+        "result": {
+          "content": [
+            {
+              "text": "{\"ok\":false,\"code\":\"invalid_argument\",\"path\":\"mode\",\"message\":\"mode must be apps, observe, find, or act; got \\\"activate\\\"\",\"hint\":\"{\\\"mode\\\":\\\"act\\\",\\\"actions\\\":[{\\\"type\\\":\\\"activate\\\",\\\"title\\\":\\\"Report\\\"}]}\",\"input_emitted\":false,\"completed\":0,\"requested\":1,\"batch\":{\"rejected_before_first_action\":true},\"preflight_only\":true}",
+              "type": "text"
+            }
+          ],
+          "isError": true
+        }
+      }
+    },
+    {
+      "request": {
+        "arguments": {
+          "actions": [
+            {
+              "ref": "r1",
+              "type": "click"
+            },
+            {
+              "timeout_ms": 1200,
+              "type": "settle"
+            }
+          ],
+          "mode": "act"
+        },
+        "tool": "AX"
+      },
+      "response": {
+        "id": 56,
+        "jsonrpc": "2.0",
+        "result": {
+          "content": [
+            {
+              "text": "{\"ok\":false,\"code\":\"invalid_argument\",\"path\":\"actions[1].type\",\"message\":\"type must be one of click, type, keypress, set_value, select, scroll, activate, close, wait; got \\\"settle\\\"; use type \\\"wait\\\" with settle:true after an input step in the same call\",\"hint\":\"{\\\"type\\\":\\\"wait\\\",\\\"settle\\\":true,\\\"timeout_ms\\\":1200}\",\"input_emitted\":false,\"completed\":0,\"requested\":2,\"batch\":{\"rejected_before_first_action\":true},\"preflight_only\":true}",
+              "type": "text"
+            }
+          ],
+          "isError": true
+        }
+      }
+    },
+    {
+      "request": {
+        "arguments": {
+          "actions": [
+            {
+              "ref": "r1",
+              "type": "double_click"
+            }
+          ],
+          "mode": "act"
+        },
+        "tool": "AX"
+      },
+      "response": {
+        "id": 57,
+        "jsonrpc": "2.0",
+        "result": {
+          "content": [
+            {
+              "text": "{\"ok\":false,\"code\":\"invalid_argument\",\"path\":\"actions[0].type\",\"message\":\"type must be one of click, type, keypress, set_value, select, scroll, activate, close, wait; got \\\"double_click\\\"; AX click invokes the element once; for a double click, call GUI with actions containing type \\\"double_click\\\" and x/y from a fresh full-desktop screenshot\",\"hint\":\"{\\\"type\\\":\\\"click\\\",\\\"ref\\\":\\\"r1\\\"}\",\"input_emitted\":false,\"completed\":0,\"requested\":1,\"batch\":{\"rejected_before_first_action\":true},\"preflight_only\":true}",
+              "type": "text"
+            }
+          ],
+          "isError": true
+        }
+      }
     }
   ],
   "cli": {
