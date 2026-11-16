@@ -289,6 +289,9 @@ func (s *AppSnapshot) renderedText() string {
 		lines = append(lines, "windows:")
 		lines = append(lines, renderedWindowInventory(s.Windows)...)
 	}
+	if note := s.contentUnavailableNote(); note != "" {
+		lines = append(lines, note)
+	}
 	if normalizedAXScope(s.Scope) == contract.AXScopeContent && s.scopeRoot != nil {
 		lines = append(lines, fmt.Sprintf(
 			"scope: content root=%s %q",

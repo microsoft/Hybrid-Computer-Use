@@ -1931,6 +1931,33 @@
           "isError": true
         }
       }
+    },
+    {
+      "request": {
+        "arguments": {
+          "app": "Editor",
+          "mode": "observe",
+          "observe": "tree"
+        },
+        "tool": "AX"
+      },
+      "response": {
+        "id": 100,
+        "jsonrpc": "2.0",
+        "result": {
+          "content": [
+            {
+              "text": "{\"ok\":true,\"input_emitted\":false}",
+              "type": "text"
+            },
+            {
+              "text": "window: \"Document\" [ref=w1]\nAX content unavailable in this snapshot: only the top-level window root was returned. Visible emptiness, renderer crash, and navigation outcome are unknown. Inspect a screenshot. Verify the outcome of any prior delete or submit before repeating it. If the app supports reloading and it is safe, reload, then observe again.\nax:\n - window \"Document\"\n",
+              "type": "text"
+            }
+          ],
+          "isError": false
+        }
+      }
     }
   ],
   "cli": {

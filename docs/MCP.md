@@ -988,6 +988,22 @@ loss. Tracing does not extend the timeout or change retry rules.
 
 ## Troubleshooting
 
+When a window snapshot returns only its top-level root, AX reports
+`AX content unavailable in this snapshot`. The window was observed, but AX
+did not obtain its content. This does not identify a renderer crash, navigation,
+or a visually empty page. When the read has coverage gaps, the diagnostic states
+that omitted content may still exist. Existing coverage notes remain available.
+Rooted, content-scoped, find, and intermediate lightweight reads do not trigger
+this window-level diagnostic.
+
+Inspect a GUI screenshot and verify the outcome of any prior delete or submit
+before repeating it. If the application supports reloading and it is safe,
+reload and observe again. HCU does not reload or replay an action automatically.
+For a persistent blank Electron window, application operators can collect
+`render-process-gone`, `did-fail-load`, and navigation events to distinguish
+renderer exit from loading failures. Check container shared-memory capacity
+and application logs; window survival alone does not prove content recovery.
+
 AX lists managed Linux application windows even when their process registers
 on the accessibility bus without exporting a tree for every window. Such
 windows have a `wN` marked `(no accessibility tree: use GUI)`. AX can activate,

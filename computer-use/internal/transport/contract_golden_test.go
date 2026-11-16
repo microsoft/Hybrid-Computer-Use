@@ -239,6 +239,22 @@ func capturePublicContract(t *testing.T) publicContract {
 		})
 	}
 
+	snapshot := transportOrderedInputTestSnapshot()
+	snapshot.WindowHandle = transportTestHandleReport
+	snapshot.Elements = snapshot.Elements[:1]
+	snapshot.TreeLines = snapshot.TreeLines[:1]
+	contentService := core.NewServiceWithBackend(&transportRecordingPlatformBackend{
+		accessibilityResponse: &core.ProviderAccessibilityResult{OK: true, Snapshot: snapshot},
+	})
+	arguments := map[string]any{"mode": "observe", "app": "Editor", "observe": "tree"}
+	contract.Calls = append(contract.Calls, contractExchange{
+		Request: map[string]any{"tool": "AX", "arguments": arguments},
+		Response: roundTripJSON(t, handleMCPRequest(map[string]any{
+			"jsonrpc": "2.0", "id": float64(100), "method": "tools/call",
+			"params": map[string]any{"name": "AX", "arguments": arguments},
+		}, contentService)),
+	})
+
 	for _, args := range [][]string{
 		{"--help"},
 		{"help", "mcp"},

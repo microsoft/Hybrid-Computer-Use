@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- AX reports when a window snapshot returns only its top-level root.
+  The diagnostic asks for a screenshot and verification of prior action outcomes
+  before retrying. It does not infer a renderer crash, reload the application,
+  or replay an action. Reads with coverage gaps say that omitted content may
+  still exist; scoped reads do not trigger the window-level diagnostic.
+
 - AX `activate` with a window ref or title can switch the target within an
   action batch. Later refs and ref-less steps use the selected window;
   refs from other windows require another explicit activation. Each step
