@@ -83,7 +83,8 @@ func compactAXActionContent(result ToolCallResult) ToolCallResult {
 		kept := make([]string, 0, len(lines))
 		for _, line := range lines {
 			trimmed := strings.TrimSpace(line)
-			if strings.HasPrefix(trimmed, "Note:") {
+			if strings.HasPrefix(trimmed, "Note:") &&
+				!strings.HasPrefix(strings.TrimSpace(strings.TrimPrefix(trimmed, "Note:")), "[a11y][synthesis]") {
 				drop := false
 				for _, marker := range routine {
 					if strings.Contains(trimmed, marker) {

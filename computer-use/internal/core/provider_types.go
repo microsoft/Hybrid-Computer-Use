@@ -153,17 +153,19 @@ func (limit *ProviderTextLimit) UnmarshalJSON(data []byte) error {
 }
 
 type ProviderClickInput struct {
-	X           *float64 `json:"x,omitempty"`
-	Y           *float64 `json:"y,omitempty"`
-	ClickCount  int      `json:"click_count,omitempty"`
-	MouseButton string   `json:"mouse_button,omitempty"`
-	ClickMethod string   `json:"click_method,omitempty"`
+	AllowGlobalInput *bool    `json:"allow_global_input,omitempty"`
+	X                *float64 `json:"x,omitempty"`
+	Y                *float64 `json:"y,omitempty"`
+	ClickCount       int      `json:"click_count,omitempty"`
+	MouseButton      string   `json:"mouse_button,omitempty"`
+	ClickMethod      string   `json:"click_method,omitempty"`
 }
 
 type ProviderScrollInput struct {
-	Direction    string  `json:"direction,omitempty"`
-	Pages        float64 `json:"pages,omitempty"`
-	WindowCentre bool    `json:"window_centre,omitempty"`
+	AllowGlobalInput *bool   `json:"allow_global_input,omitempty"`
+	Direction        string  `json:"direction,omitempty"`
+	Pages            float64 `json:"pages,omitempty"`
+	WindowCentre     bool    `json:"window_centre,omitempty"`
 }
 
 type ProviderTypeInput struct {
@@ -294,6 +296,17 @@ func (request *ProviderActionRequest) UnmarshalJSON(data []byte) error {
 	decodeInput := func(target any) error {
 		if len(wire.Input) == 0 {
 			return errors.New("provider action input is required")
+		}
+		if wire.Intent == AccessibilityClick || wire.Intent == AccessibilityScroll {
+			var policy struct {
+				AllowGlobalInput json.RawMessage `json:"allow_global_input"`
+			}
+			if err := json.Unmarshal(wire.Input, &policy); err != nil {
+				return err
+			}
+			if string(policy.AllowGlobalInput) == "null" {
+				return errors.New("provider allow_global_input must be a boolean")
+			}
 		}
 		return DecodeProviderWireJSON(wire.Input, target)
 	}

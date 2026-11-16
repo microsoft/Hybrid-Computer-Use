@@ -42,6 +42,10 @@ fits which state, and how to combine them.
   window without explicit `activate`; activate back before reusing the
   previous window's refs. Each step reports its window; the final observation
   uses the last executed window.
+- On Linux, set `allow_global_input:false` on each AX `click` or `scroll`
+  when driver focus changes or global pointer/keyboard input are forbidden.
+  Semantic actions can still cause the application to raise a dialog or take
+  focus; this field does not guarantee complete background isolation.
 - Every `act` result starts with what happened, then a diff:
 
 ```text
@@ -116,6 +120,9 @@ Never repeat the request when `retry_same_request=false`. Next step by code:
   not resend the same batch.
 - `effect_unknown`: input may have been sent. Inspect state before any retry,
   so that nothing is applied twice.
+- `global_input_forbidden`: this step sent no input; earlier steps may have
+  run. Keep `allow_global_input:false` unless global input is authorized.
+  Observe and choose an action compatible with the user's constraints.
 - `ambiguous_window`, `window_not_found`: choose a `wN` from the listed windows.
 - `no_focused_window`: start the batch with `activate`.
 - `app_unavailable`: if the application is still starting, wait once for

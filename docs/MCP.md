@@ -498,7 +498,7 @@ change canonical text, selectors, refs, or the response budget.
 ### `act` steps
 
 - `act` accepts up to 64 ordered steps: actions
-  `{type, ref|title, text|keys|value|direction|pages|to_ref}` and `wait`
+  `{type, ref|title, text|keys|value|direction|pages|to_ref, allow_global_input}` and `wait`
   steps. Structural argument errors reject the whole batch before input. The first step
   that fails stops the batch, and the result says how many ran.
 - The `rN` or `wN` refs name the window, so an `act` call with refs needs no
@@ -580,6 +580,60 @@ retains `observation_failure_code` and `observation_required`. A no-input
 statement inside that follow-up describes the read, not the earlier action.
 Stale-window follow-ups report the unavailable source reference without
 repeating an input-delivery statement.
+
+### Linux click and scroll input policy
+
+Linux AX `click` and `scroll` accept an optional per-action boolean
+`allow_global_input`. It defaults to `true`. Set it to `false` to forbid
+driver-requested focus changes, window activation or raising, and synthesized
+pointer or keyboard input for that action. This includes focus preparation
+for editors and pointer input used only to synchronize Qt control state.
+The policy does not promise that application focus stays unchanged. An
+accessibility action can itself open or raise a dialog or change app focus.
+
+```json
+{"mode":"act","actions":[{"type":"click","ref":"r12","allow_global_input":false},{"type":"scroll","ref":"r15","direction":"down","pages":1,"allow_global_input":false}]}
+```
+
+The field is supported only on Linux and only inside `click` or `scroll`
+actions. A non-boolean value, another action type, a top-level field, or use
+on another platform returns `invalid_argument`. These errors reject the
+whole batch before any action runs, even when the supplied value is `true`.
+Omitting the field preserves the existing behavior on every platform.
+The policy applies to each action separately; it does not restrict other
+actions in the same batch.
+
+Tab clicks prefer the parent container's accessibility selection operation,
+even when the tab exposes its own action. List items, table rows and table
+cells use parent selection only when they have no own action.
+
+Semantic scroll uses a direct scrollbar or the unique directional scrollbar
+of the nearest scroll pane or viewport. It does not select an unrelated
+sibling panel's scrollbar. Each requested page represents five minimum
+range increments, clamped to the range bounds.
+Fractional pages retain their fractional range increment.
+`pages` is approximate for both range changes and wheel input. Range units
+are not assumed to be pixels. The provider reads back the exact clamped
+target; an unchanged value at a boundary is a verified no-op.
+
+If a semantic route is unavailable, global input is allowed only when
+`allow_global_input` is `true`. Otherwise the action returns
+`global_input_forbidden`, with provider phase `precondition` and
+`input_events_emitted=false`.
+
+An attempted selection or range mutation whose verification fails returns
+`effect_unknown` with `input_emitted=true`, without a global retry.
+With global input forbidden, an AT-SPI action that was called but returned
+false also reports `effect_unknown` with `input_emitted=true`, without a
+global retry. An AT-SPI action returning true keeps the existing post-action
+evidence behavior; the return value does not prove the requested effect.
+When global input is allowed, unsuccessful generic actions keep their
+existing fallback behavior.
+This input flag includes attempted semantic mutations, not just global events.
+Check `completed` and `input_emitted`: earlier batch steps may already have run.
+
+Results retain `[a11y][synthesis]` route notes and their warnings. A route
+note describes input delivery, not proof that the application accepted it.
 
 ### Linux key names
 
@@ -709,6 +763,7 @@ Every AX and GUI result starts with one JSON line: `ok`, and on failure
 | `wait_timeout` | AX | maybe | Observe again; `completed` counts the steps that ran. |
 | `window_changed` | AX, GUI | maybe | Observe before retrying; do not repeat the batch blindly. |
 | `effect_unknown` | AX, GUI | maybe | Observe before retrying; input may have taken effect. |
+| `global_input_forbidden` | AX | only earlier batch steps | The refused action sent no input. Check `completed` and observe before replanning; permit global input only when authorized. |
 | `app_unavailable` | AX | no | List apps; the application is not running or not accessible. |
 | `ambiguous_window` | AX | no | Use a longer title or the `wN` from `apps`. |
 | `window_not_found` | AX | no | List apps and use a `wN` or an exact title. |

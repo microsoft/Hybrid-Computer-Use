@@ -104,6 +104,10 @@ type probeReached struct{}
 
 type probeBackend struct{ *recordingPlatformBackend }
 
+func (probeBackend) HostInfo() HostBackendInfo {
+	return HostBackendInfo{Platform: "linux"}
+}
+
 func (probeBackend) ObserveApps(ProviderObserveAppsRequest) (ProviderAccessibilityResult, error) {
 	panic(probeReached{})
 }

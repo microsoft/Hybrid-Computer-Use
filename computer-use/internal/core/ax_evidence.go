@@ -553,12 +553,13 @@ var axPublicFields = []string{
 
 // axPublicHints are the default corrected calls per error code.
 var axPublicHints = map[string]string{
-	contract.AXCodeStaleRef:       `{"mode":"find","window_ref":"wN","query":{"name_contains":"..."}}`,
-	contract.AXCodeWindowChanged:  `{"mode":"observe","window_ref":"wN"}`,
-	contract.AXCodeWaitTimeout:    `{"mode":"observe","window_ref":"wN"}`,
-	contract.AXCodeEffectUnknown:  `{"mode":"observe","window_ref":"wN"}`,
-	contract.AXCodeAppUnavailable: `{"mode":"apps"}`,
-	contract.AXCodeRuntimeError:   `{"mode":"apps"}`,
+	contract.AXCodeStaleRef:             `{"mode":"find","window_ref":"wN","query":{"name_contains":"..."}}`,
+	contract.AXCodeWindowChanged:        `{"mode":"observe","window_ref":"wN"}`,
+	contract.AXCodeWaitTimeout:          `{"mode":"observe","window_ref":"wN"}`,
+	contract.AXCodeEffectUnknown:        `{"mode":"observe","window_ref":"wN"}`,
+	contract.AXCodeGlobalInputForbidden: `{"mode":"observe","window_ref":"wN"}`,
+	contract.AXCodeAppUnavailable:       `{"mode":"apps"}`,
+	contract.AXCodeRuntimeError:         `{"mode":"apps"}`,
 }
 
 // axPublicErrorCode maps internal failure facts to one public code.
@@ -578,6 +579,13 @@ func axPublicErrorCode(full map[string]any) string {
 		return contract.AXCodeWaitTimeout
 	case failure == "effect_unknown":
 		return contract.AXCodeEffectUnknown
+	case failure == contract.AXCodeGlobalInputForbidden:
+		if axEvidenceReportsInputEmission(full) || full["partial_input_possible"] == true || full["mutation_unknown"] == true {
+			return contract.AXCodeEffectUnknown
+		}
+		if phase == "precondition" {
+			return contract.AXCodeGlobalInputForbidden
+		}
 	case failure == "ax_app_unavailable" || status == "app_unavailable":
 		return contract.AXCodeAppUnavailable
 	case failure == "ax_app_ambiguous":

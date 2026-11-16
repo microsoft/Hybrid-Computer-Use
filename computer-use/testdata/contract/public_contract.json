@@ -94,6 +94,11 @@
                 "items": {
                   "additionalProperties": false,
                   "properties": {
+                    "allow_global_input": {
+                      "default": true,
+                      "description": "Linux click/scroll only. false forbids driver focus/raise and pointer/keyboard synthesis. Semantic actions may themselves change app focus. Unsupported uses reject the batch before input.",
+                      "type": "boolean"
+                    },
                     "direction": {
                       "enum": [
                         "up",

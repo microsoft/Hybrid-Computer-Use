@@ -328,7 +328,8 @@ func observeNoneNotes(notes []string) []string {
 		if phase == "immediate" && category != "" {
 			continue
 		}
-		if strings.HasPrefix(note, "[expect]") ||
+		if strings.HasPrefix(note, "[a11y][synthesis]") ||
+			strings.HasPrefix(note, "[expect]") ||
 			strings.HasPrefix(note, "[semantic-resolution]") ||
 			strings.HasPrefix(note, "[canonical-address]") ||
 			strings.Contains(note, `"predicate_verified":`) ||
@@ -402,6 +403,10 @@ func modelFacingAXNotes(notes []string) []string {
 			} else {
 				appendOnce("[state] visual_change=true")
 			}
+			continue
+		}
+		if strings.HasPrefix(note, "[a11y][synthesis]") {
+			appendOnce(note)
 			continue
 		}
 		if strings.HasPrefix(note, "[a11y]") {

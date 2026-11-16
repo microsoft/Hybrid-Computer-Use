@@ -6,6 +6,23 @@
   action batch. Later refs and ref-less steps use the selected window;
   refs from other windows require another explicit activation. Each step
   reports its window, and the final observation uses the last executed window.
+- Linux AX `click` and `scroll` accept `allow_global_input`, defaulting to
+  `true`. Setting it to `false` forbids driver focus/raise and synthesized
+  pointer/keyboard input, including editor focus preparation and Qt state
+  synchronization. Semantic actions can still change application focus.
+  Unsupported uses reject the whole batch with `invalid_argument` before
+  input. A required global route returns `global_input_forbidden` without
+  input from that action. Under this policy, an AT-SPI action returning
+  false after invocation reports `effect_unknown` without a global retry.
+- Linux AX tab clicks prefer the parent container's accessibility selection
+  operation. Supported list and table items without their own action also
+  use parent selection. Failed selection verification returns
+  `effect_unknown` without global input fallback.
+- Linux AX scroll can use accessible scrollbar ranges with readback.
+  A page means five minimum range increments, not pixels; pages remain
+  approximate, and a clamped boundary no-op is verified. AX results retain
+  synthesis route notes and warnings without claiming successful effects.
+
 - AX batch errors expose the failed action's reason and a failure-specific
   recovery hint while retaining batch progress and input evidence. No-input
   argument and unsupported-operation failures use `invalid_argument`;

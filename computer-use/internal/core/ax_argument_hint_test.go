@@ -77,6 +77,7 @@ var axBadCalls = []string{
 	`{"mode":"act","actions":[{"type":"activate","ref":"w3","window_ref":"w3"}]}`,
 	`{"mode":"act","actions":[{"type":"click","ref":"r??"}]}`,
 	`{"mode":"act","actions":[{"type":"click","ref":"w1"}]}`,
+	`{"mode":"act","actions":[{"type":"click","ref":"r1","allow_global_input":"false"}]}`,
 	`{"mode":"act","actions":[{"type":"close","ref":"r1"}]}`,
 	`{"mode":"act","actions":[{"type":"click"}]}`,
 	`{"mode":"act","actions":[{"type":"set_value","ref":"r1"}]}`,

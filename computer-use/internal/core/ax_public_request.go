@@ -25,6 +25,7 @@ var axPublicErrorCodes = []string{
 	contract.AXCodeInvalidArgument, contract.AXCodeStaleRef, contract.AXCodeWindowChanged, contract.AXCodeWaitTimeout,
 	contract.AXCodeEffectUnknown, contract.AXCodeAppUnavailable, contract.AXCodeRuntimeError,
 	contract.AXCodeAmbiguousWindow, contract.AXCodeWindowNotFound, contract.AXCodeNoFocusedWindow,
+	contract.AXCodeGlobalInputForbidden,
 }
 
 // axArgError is a rejected argument. It is returned before any input.
@@ -109,12 +110,12 @@ var axModeFields = map[string][]string{
 
 // axActionFields lists the fields each action type accepts besides type.
 var axActionFields = map[string][]string{
-	"click":     {"ref"},
+	"click":     {"ref", "allow_global_input"},
 	"type":      {"ref", "text"},
 	"keypress":  {"ref", "keys"},
 	"set_value": {"ref", "value"},
 	"select":    {"ref", "to_ref", "text"},
-	"scroll":    {"ref", "direction", "pages"},
+	"scroll":    {"ref", "direction", "pages", "allow_global_input"},
 	"activate":  {"ref", "title"},
 	"close":     {"ref", "title"},
 	"wait":      {"window", "query", "ref", "value", "state", "text", "gone", "settle", "timeout_ms"},
@@ -412,6 +413,13 @@ func decodeAXAction(object map[string]any, path string) (axBatchAction, *axArgEr
 			err.Hint = axActionShapeHint(object)
 		}
 		return action, err.withRule(axRuleFieldForType)
+	}
+	if raw, present := object["allow_global_input"]; present {
+		allowed, ok := raw.(bool)
+		if !ok {
+			return action, axInvalid(path+".allow_global_input", "allow_global_input must be a boolean", "")
+		}
+		action.allowGlobalInput = &allowed
 	}
 	if actionType == "wait" {
 		wait, err := decodeAXWait(object, path)

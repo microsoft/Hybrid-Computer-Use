@@ -83,8 +83,8 @@ TARGET_FIELDS = {
 PREDICATE_FIELDS = {"kind", "value"}
 ACTION_INPUT_CONTRACTS = {
     "resolve_target": (set(), set()),
-    "click": ({"x", "y", "click_count", "mouse_button", "click_method"}, set()),
-    "scroll": ({"direction", "pages", "window_centre"}, {"direction", "pages"}),
+    "click": ({"x", "y", "click_count", "mouse_button", "click_method", "allow_global_input"}, set()),
+    "scroll": ({"direction", "pages", "window_centre", "allow_global_input"}, {"direction", "pages"}),
     "type": ({"text"}, {"text"}),
     "keypress": ({"key"}, {"key"}),
     "set_value": ({"value", "require_semantic_write"}, {"value"}),
@@ -474,6 +474,9 @@ def _validate_action_input(payload):
                 "invalid_provider_request",
                 "untargeted action.{} requires window_handle".format(intent),
             )
+    if "allow_global_input" in input_object and not isinstance(input_object["allow_global_input"], bool):
+        raise ProviderRequestError(
+            "invalid_provider_request", "action.input.allow_global_input must be a boolean")
     if intent == "scroll":
         if input_object["direction"] not in {"up", "down", "left", "right"}:
             raise ProviderRequestError(

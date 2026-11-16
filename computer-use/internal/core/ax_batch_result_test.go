@@ -22,6 +22,73 @@ func (backend *envelopeFailureBackend) ResolveAndAct(request ProviderActionReque
 	return backend.reportBackend.ResolveAndAct(request)
 }
 
+func TestGlobalInputForbiddenKeepsCauseAndBatchFacts(t *testing.T) {
+	for _, unknown := range []bool{false, true} {
+		for _, failAt := range []int{1, 2} {
+			service, desktop := reportService(t, reportMain())
+			_, refs := reportObserve(t, service, "OK")
+			code, phase := contract.AXCodeGlobalInputForbidden, "precondition"
+			if unknown {
+				code, phase = contract.AXCodeEffectUnknown, "emission"
+			}
+			backend := &envelopeFailureBackend{
+				reportBackend: desktop, failAt: failAt,
+				failure: ProviderAccessibilityResult{
+					Error:    "semantic route unavailable or unverified; no global fallback",
+					Failure:  &ProviderFailure{Code: code, Phase: phase, FactsComplete: true},
+					Mutation: &ProviderMutationFacts{InputEventsEmitted: unknown, MutationUnknown: unknown},
+				},
+			}
+			service.Backend = &globalInputPolicyBackend{backend, "linux"}
+			result := PrepareAXEvidence(service.callTool(contract.PublicToolAX, map[string]any{
+				"mode": "act", "actions": []any{
+					map[string]any{"type": "click", "ref": refs["OK"], "allow_global_input": false},
+					map[string]any{"type": "click", "ref": refs["OK"], "allow_global_input": false},
+				},
+			}))
+			public := result.StructuredContent
+			if !result.IsError || public["code"] != code || public["completed"] != failAt-1 ||
+				public["input_emitted"] != (unknown || failAt > 1) {
+				t.Fatalf("failed action/prefix evidence lost: %#v, %s", public, ResultText(result))
+			}
+			if backend.attempts != failAt {
+				t.Fatalf("failure retried or later action ran: %d attempts", backend.attempts)
+			}
+		}
+	}
+}
+
+type synthesisNoteBackend struct {
+	*reportBackend
+	note string
+}
+
+func (backend *synthesisNoteBackend) ResolveAndAct(request ProviderActionRequest) (ProviderAccessibilityResult, error) {
+	result, err := backend.reportBackend.ResolveAndAct(request)
+	if len(backend.actionRequests) == 1 {
+		result.Notes = []string{backend.note}
+	}
+	return result, err
+}
+
+func TestAXBatchRetainsEarlierSynthesisWarning(t *testing.T) {
+	for _, observe := range []string{"none", "diff", "tree"} {
+		service, desktop := reportService(t, reportMain())
+		_, refs := reportObserve(t, service, "OK", "Size")
+		note := "[a11y][synthesis] Synthesized click. Global input may change focus; verify the effect."
+		service.Backend = &synthesisNoteBackend{desktop, note}
+		result := PrepareAXEvidence(service.callTool(contract.PublicToolAX, map[string]any{
+			"mode": "act", "observe": observe, "actions": []any{
+				map[string]any{"type": "click", "ref": refs["OK"]},
+				map[string]any{"type": "set_value", "ref": refs["Size"], "value": "14"},
+			},
+		}))
+		if result.IsError || strings.Count(ResultText(result), note) != 1 {
+			t.Fatalf("%s lost or duplicated earlier synthesis warning: %s", observe, ResultText(result))
+		}
+	}
+}
+
 func TestRuntimeFailureEnvelopeKeepsCauseAndBatchFacts(t *testing.T) {
 	for _, failure := range []struct {
 		code, phase, reason, publicCode string

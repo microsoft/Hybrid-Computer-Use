@@ -52,7 +52,8 @@ from .ax_target_notes import (
 )
 from .ax_snapshot_diagnostics import is_dropdown_item
 from .ax_records import gtk_combo_partner
-from .ax_select import perform_select
+from .ax_select import perform_select, select_item
+from .ax_semantic_scroll import semantic_scroll
 from .ax_dropdown import is_chromium_select
 
 
@@ -60,6 +61,37 @@ A11Y_CHANNEL = "[a11y]"
 KEY_CHANNEL = "[keyboard]"
 SEMANTIC = "[semantic] "
 SYNTHESIS = "[synthesis] "
+
+
+def _require_global_input(action_input):
+    if action_input.get("allow_global_input") is False:
+        raise OperationFailure(
+            "global_input_forbidden: no usable semantic route is available; "
+            "this action requires driver focus or global pointer/keyboard input. "
+            "No input was emitted.",
+            failure_code="global_input_forbidden", failure_phase="precondition",
+            input_events_emitted=False, failure_subject="element")
+
+
+def _selection_click(element, notes, evidence):
+    if node_role(element) not in {"page tab", "list item", "table row", "table cell"}:
+        return False
+    parent = safe(lambda: element.get_parent())
+    if parent is None or safe(lambda: parent.get_selection_iface()) is None:
+        return False
+    try:
+        select_item(element)
+    except OperationFailure as error:
+        if error.input_events_emitted:
+            evidence.update(route="semantic_selection", input_emitted=True,
+                            readback_sampled=True, readback_verified=False)
+        raise
+    evidence.update(route="semantic_selection", input_emitted=True,
+                    readback_sampled=True, readback_verified=True)
+    notes.append(A11Y_CHANNEL + SEMANTIC + "Selected the element through its "
+                 "AT-SPI container and verified selection; no focus or pointer input "
+                 "was sent.")
+    return True
 
 
 def _perform_click(
@@ -123,7 +155,11 @@ def _accessibility_click(
             "click_method 'accessibility' cannot represent click_count > 1; "
             "use click_method 'auto' or 'global' for a real multi-click"
         )
-    if not do_action_by_index(element, preferred_action_index(element)):
+    action_index = preferred_action_index(element)
+    if (action_index is None or node_role(element) == "page tab") and _selection_click(
+            element, notes, action_evidence):
+        return
+    if not do_action_by_index(element, action_index):
         raise RuntimeError(
             "click_method 'accessibility' could not click the requested element"
         )
@@ -147,6 +183,7 @@ def _global_click(
     notes,
     action_evidence,
 ):
+    _require_global_input(action_input)
     element_record, _ = require_stable_coordinate_geometry(
         element, element_record, bounds
     )
@@ -171,7 +208,7 @@ def _global_click(
         addressing_channel(element_record)
         + SYNTHESIS
         + "Synthesized {} coordinate click(s) {} after bringing the window "
-        "to the foreground. {}{}"
+        "to the foreground and moving the real pointer. {}{}"
         .format(
             click_count,
             frame_point_text(x, y),
@@ -205,6 +242,9 @@ def _auto_click(
         and not is_dropdown_item(element, window)
     )
     action_index = preferred_action_index(element) if semantic_click else None
+    if (semantic_click and (action_index is None or node_role(element) == "page tab")
+            and _selection_click(element, notes, action_evidence)):
+        return element_record
     if (
         action_index is not None
         and node_role(element) in {"entry", "text", "password text"}
@@ -217,6 +257,7 @@ def _auto_click(
         # Entry.activate means submit/Enter, not editor focus. In a freshly
         # opened dialog it can leave focus on an outer row, consuming the
         # start of a following untargeted type action outside the editor.
+        _require_global_input(action_input)
         try:
             focus_target_element(
                 window, element, element_record, "editable text click")
@@ -243,6 +284,7 @@ def _auto_click(
     state_only_note = ""
     if semantic_click:
         if action_only_sets_state(element, action_index):
+            _require_global_input(action_input)
             pointer_record, refused = _pointer_click_for_state_only_action(
                 window, bounds, element, element_record, notes,
                 action_evidence)
@@ -256,6 +298,14 @@ def _auto_click(
                 "changes.".format(refused)
             )
         handled = do_action_by_index(element, action_index)
+        if action_index is not None and not handled and action_input.get("allow_global_input") is False:
+            action_evidence.update(route="semantic_action", input_emitted=True,
+                                   readback_verified=False)
+            raise OperationFailure(
+                "The AT-SPI action was attempted but did not confirm delivery. "
+                "No global input was sent. Observe before retrying.",
+                failure_code="effect_unknown", failure_phase="emission",
+                input_events_emitted=True, failure_subject="element")
     if handled:
         action_evidence["route"] = "semantic_action"
         action_evidence["input_emitted"] = True
@@ -289,6 +339,7 @@ def _auto_click(
                 failure_phase="precondition",
                 input_events_emitted=False,
             )
+        _require_global_input(action_input)
         element_record, _ = require_stable_coordinate_geometry(
             element, element_record, bounds
         )
@@ -334,6 +385,7 @@ def _auto_click(
             addressing_channel(element_record)
             + SYNTHESIS
             + reason
+            + "This route brings the window to the foreground and moves the real pointer. "
             + UNVERIFIED_SYNTHESIS
         )
     return element_record
@@ -384,7 +436,7 @@ def _pointer_click_for_state_only_action(
         A11Y_CHANNEL
         + SYNTHESIS
         + "Clicked the element with the pointer {} after checking that "
-        "the window is in front "
+        "the window is in front; this moves the real pointer "
         "and the point is on this element. Its only AT-SPI action is a "
         "toolkit toggle that changes the checked state without the click the "
         "application listens for, so a real click was needed. {}".format(
@@ -404,6 +456,9 @@ def _perform_scroll(
 ):
     direction = action_input.get("direction", "down")
     pages = action_input.get("pages", 1)
+    if semantic_scroll(element, direction, pages, notes, action_evidence):
+        return element_record
+    _require_global_input(action_input)
     point = None
     if action_input.get("window_centre") and bounds is not None:
         point = (
@@ -437,7 +492,7 @@ def _perform_scroll(
             "element you named. Second, one page is APPROXIMATED as {} notches; "
             "the real distance is whatever the application's scroll settings say, "
             "so do not treat pages=1 as exactly one Page_Down. This also moves the "
-            "real pointer. {}".format(
+            "real pointer and brings the window to the foreground. {}".format(
                 int(math.ceil(float(pages or 1))) * WHEEL_CLICKS_PER_PAGE,
                 frame_point_text(*point),
                 # State where the position came from: without a target ref

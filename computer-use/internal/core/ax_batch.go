@@ -9,8 +9,9 @@ import (
 )
 
 type axBatchAction struct {
-	actionType string
-	targetRef  string
+	actionType       string
+	targetRef        string
+	allowGlobalInput *bool
 	// toRef is the range end of a select action.
 	toRef     string
 	direction string
@@ -42,7 +43,7 @@ func (s *Service) executeAXBatchAction(
 			obs,
 		).withEvidenceScope("delivery_or_local_ui")
 	case "click":
-		return s.click(
+		return s.clickWithGlobalInput(
 			context.AppToken,
 			action.targetRef,
 			noDeclaredTarget,
@@ -52,6 +53,7 @@ func (s *Service) executeAXBatchAction(
 			"left",
 			"auto",
 			obs,
+			action.allowGlobalInput,
 		).withEvidenceScope("delivery_or_local_ui")
 	case "keypress":
 		return s.pressKey(
@@ -64,7 +66,7 @@ func (s *Service) executeAXBatchAction(
 			obs,
 		).withEvidenceScope("delivery_or_local_ui")
 	case "scroll":
-		return s.scroll(
+		return s.scrollWithGlobalInput(
 			context.AppToken,
 			action.direction,
 			action.targetRef,
@@ -73,6 +75,7 @@ func (s *Service) executeAXBatchAction(
 			context.expectedWindow,
 			action.pages,
 			obs,
+			action.allowGlobalInput,
 		).withEvidenceScope("delivery_or_local_ui")
 	case "set_value":
 		return s.setValue(
@@ -115,6 +118,16 @@ func (s *Service) axBatchDecoded(
 	windowRef string,
 ) ToolCallResult {
 	requested := len(actions)
+	if s.platformBackend().HostInfo().Platform != "linux" {
+		for index, action := range actions {
+			if action.allowGlobalInput != nil {
+				return axArgErrorResult(axInvalid(
+					fmt.Sprintf("actions[%d].allow_global_input", index),
+					"allow_global_input is supported only for Linux AX click and scroll", "",
+				), requested)
+			}
+		}
+	}
 	if axBatchOnlyWaits(actions) {
 		return s.axWaitOnly(actions, obs, windowRef)
 	}
@@ -186,7 +199,17 @@ func (s *Service) axBatchRun(
 	focus *axDesktopWindow,
 	requested int,
 	trace *actReportTrace,
-) ToolCallResult {
+) (batchResult ToolCallResult) {
+	var synthesisNotes []string
+	defer func() {
+		text := ResultText(batchResult)
+		for _, note := range synthesisNotes {
+			if !strings.Contains(text, note) {
+				batchResult.Content = append(batchResult.Content, ContentItem{Type: "text", Text: note})
+				text += "\n" + note
+			}
+		}
+	}()
 	if err := s.preflightPlatformAXKeys(actions); err != nil {
 		return axBatchPreflightError(err, requested)
 	}
@@ -357,7 +380,15 @@ func (s *Service) axBatchRun(
 			result.IsError = false
 			actionEntry["call_error"] = false
 		}
+		for _, line := range strings.Split(ResultText(result), "\n") {
+			if note := strings.TrimSpace(line); strings.HasPrefix(note, "Note: [a11y][synthesis]") {
+				synthesisNotes = append(synthesisNotes, note)
+			}
+		}
 		if result.IsError {
+			if axPublicErrorCode(result.StructuredContent) == contract.AXCodeGlobalInputForbidden {
+				result.StructuredContent[contract.AXPublicErrorCodeKey] = contract.AXCodeGlobalInputForbidden
+			}
 			actionEvidence = append(actionEvidence, actionEntry)
 			anyInputEmitted, anyPartialPossible, anyMutationUnknown :=
 				batchMutationSummary(
