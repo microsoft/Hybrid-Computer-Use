@@ -398,14 +398,16 @@ def find_editable_text(root):
     character count stays the same, so the text is silently lost and the
     tool reports success.
 
-    The node must therefore be both EDITABLE and FOCUSED, and exactly one
-    candidate must exist. Without a clear focus owner nothing is guessed
+    The node must therefore expose Text and be both EDITABLE and FOCUSED,
+    and exactly one candidate must exist. EditableText is optional: a
+    keyboard-only editor still needs text readback. Without a clear focus
+    owner nothing is guessed
     from visibility or tree order; the caller uses the keyboard path, which
     is reported as unverified.
     """
     focused = []
     for node in iter_all(root):
-        if not (has_editable_text_iface(node) and has_text_iface(node)):
+        if not has_text_iface(node):
             continue
         if not state_contains(node, Atspi.StateType.EDITABLE):
             continue

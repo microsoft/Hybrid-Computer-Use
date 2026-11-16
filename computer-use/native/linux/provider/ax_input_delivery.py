@@ -19,11 +19,13 @@ from .ax_actions import (
     focus_target_element,
     insert_text_outcome_on_node,
     parse_key,
+    read_all_text,
     resolve_combo_editor,
     scroll_element,
     send_key,
     send_text,
     set_element_value_outcome,
+    text_insertion_point,
 )
 from .gui_input import send_mouse_click
 from .input_primitives import (
@@ -484,14 +486,13 @@ def _perform_type(
             semantic_input_emitted,
         ) = insert_text_outcome_on_node(element, action_input.get("text", ""))
     else:
+        element = find_editable_text(window)
         (
             write_outcome,
             before_chars,
             after_chars,
             semantic_input_emitted,
-        ) = insert_text_outcome_on_node(
-            find_editable_text(window), action_input.get("text", "")
-        )
+        ) = insert_text_outcome_on_node(element, action_input.get("text", ""))
     if semantic_input_emitted:
         action_evidence["route"] = "editable_text_api"
         action_evidence["input_emitted"] = True
@@ -534,6 +535,18 @@ def _perform_type(
         if element_record is None:
             require_window_focus(window, "type")
             action_evidence["window_focus_verified"] = True
+            focused = find_editable_text(window)
+            if element is not None and focused != element:
+                raise OperationFailure(
+                    "effect_unknown: the focused text field changed during "
+                    "window activation; no keyboard input was emitted. "
+                    "Observe the current focus before retrying.",
+                    failure_code="effect_unknown",
+                    failure_phase="precondition",
+                    input_events_emitted=semantic_input_emitted,
+                    failure_subject="element",
+                )
+            element = focused
         else:
             # The semantic write attempt may itself move focus. Re-establish
             # and verify the exact target immediately before global synthesis.
@@ -542,11 +555,21 @@ def _perform_type(
                 "targeted type_text keyboard fallback")
             action_evidence["window_focus_verified"] = True
             action_evidence["target_focus_verified"] = True
-        text_route = send_text(action_input.get("text", ""))
+        text_iface = safe(element.get_text_iface) if element is not None else None
+        before_text = read_all_text(text_iface)
+        expected_text = None
+        payload = action_input.get("text", "")
+        if before_text is not None:
+            offset, selection = text_insertion_point(text_iface)
+            end = selection[1] if selection else offset
+            expected_text = before_text[:offset] + payload + before_text[end:]
+        text_route = send_text(payload)
         action_evidence["route"] = "keyboard_synthesis"
         action_evidence["focus_verified"] = True
         action_evidence["editable_verified"] = None
         action_evidence["input_emitted"] = True
+        readback_note = _verify_keyboard_text(
+            text_iface, before_text, expected_text, action_evidence)
         notes.append(
             KEY_CHANNEL
             + SYNTHESIS
@@ -555,10 +578,45 @@ def _perform_type(
                 "verifying the requested element held focus"
                 if element_record is not None
                 else "bringing the window to the foreground",
-                UNVERIFIED_SYNTHESIS,
+                readback_note if action_evidence.get("readback_verified") is True
+                else UNVERIFIED_SYNTHESIS + " " + readback_note,
             )
             + (" " + text_route if text_route else "")
         )
+
+
+def _verify_keyboard_text(text_iface, before_text, expected_text, evidence):
+    if expected_text is None:
+        return (
+            "Typed text effect is unknown: the focused field's text could not "
+            "be read before keyboard input.")
+    deadline = time.monotonic() + 1.0
+    while True:
+        after_text = read_all_text(text_iface)
+        evidence["readback_sampled"] = True
+        evidence["readback_verified"] = (
+            after_text == expected_text if after_text is not None else None)
+        if after_text == expected_text:
+            return (
+                "Read back the focused field after keyboard input and "
+                "confirmed the expected text insertion.")
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(0.02)
+    if after_text is None:
+        reason = "the focused field's text readback is unavailable"
+    elif after_text == before_text:
+        reason = "the focused field's text is unchanged after keyboard input"
+    else:
+        reason = "the focused field does not contain the expected text insertion"
+    raise OperationFailure(
+        "effect_unknown: " + reason + "; text was not retried. "
+        "Observe the field before sending more input.",
+        failure_code="effect_unknown",
+        failure_phase="readback",
+        input_events_emitted=True,
+        failure_subject="element",
+    )
 
 
 def _perform_keypress(

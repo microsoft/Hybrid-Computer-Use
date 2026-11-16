@@ -85,6 +85,12 @@ ASCII text without line feeds or tabs is typed as key events on both
 desktops. When AX falls back to keyboard typing, its note says which way the
 text was typed. GUI results do not include notes.
 
+Linux AX reads the focused text field after keyboard typing when its text is
+accessible. It waits up to one second for the expected insertion. Unchanged,
+unexpected or unreadable text produces an `effect_unknown` result without
+retyping. If window activation changes the resolved field, AX stops before
+sending keys. Without a readable field, the typing effect remains unknown.
+
 To use the input method, applications must inherit the desktop's
 input-method environment. Existing application processes may need a restart
 after that environment is corrected.
@@ -606,7 +612,14 @@ effect: r58 checkbox "Interface" checked=false→true
 windows: opened w5 "Insert Sheet" (dialog, focused); closed w3 "Print"; focus w2
 ```
 
-There is one `effect` line per action with an element `ref`. It compares the
+Each `type` step reports its text-value evidence. Without a ref, the report
+uses the unique focused editable textbox in the pre-action read. A focus
+change alone does not confirm typing. Unchanged values are reported as such;
+missing, incomplete or unreadable evidence produces `unknown` with a reason.
+Empty values remain unknown because the snapshot does not distinguish empty
+text from unavailable text. These lines add no provider calls.
+
+Other actions with an element `ref` also have one `effect` line. It compares the
 element in the read before that action with the next read after it and names
 the role, the name, and the state or value fields that changed. When both
 reads are of the same window and nothing else in it changed, the line ends

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- AX reports text-value evidence for `type` steps without a ref, including
+  unchanged or unreadable fields. A focus change alone does not confirm typing.
+- Linux AX checks focused-field readback after keyboard typing and reports
+  unconfirmed text explicitly. If window activation changes the resolved text
+  field, typing stops before keyboard input.
+
 ## 1.0.0
 
 First open-source release of Hybrid Computer Use.
