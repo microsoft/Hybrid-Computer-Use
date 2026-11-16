@@ -70,6 +70,7 @@ from native.linux.provider import (  # noqa: E402
     x11_windows,
     desktop_layout,
     x11_window_inventory,
+    x11_client_identity,
 )
 
 PROVIDER_MODULES = (
@@ -84,6 +85,7 @@ PROVIDER_MODULES = (
     x11_windows,
     desktop_layout,
     x11_window_inventory,
+    x11_client_identity,
     atspi_inventory,
     ax_node_properties,
     ax_records,

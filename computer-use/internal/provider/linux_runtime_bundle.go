@@ -13,6 +13,7 @@ var linuxProviderPaths = []string{
 	"native/linux/provider/x11_windows.py",
 	"native/linux/provider/desktop_layout.py",
 	"native/linux/provider/x11_window_inventory.py",
+	"native/linux/provider/x11_client_identity.py",
 	"native/linux/provider/window_scale.py",
 	"native/linux/provider/atspi_inventory.py",
 	"native/linux/provider/ax_node_properties.py",

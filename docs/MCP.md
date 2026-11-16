@@ -59,14 +59,14 @@ XMODIFIERS
 ```
 
 The provider needs Python 3 with PyGObject and the AT-SPI, GTK and GdkPixbuf
-typelibs, plus `xdotool`, `wmctrl` and `x11-utils`. The IBus typelib and
+typelibs, plus `xdotool`, `wmctrl`, `x11-utils` and `libxres1`. The IBus typelib and
 packages are optional; they enable input-method keyboard typing. On Debian or
 Ubuntu:
 
 ```bash
 sudo apt-get install python3 python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 \
   gir1.2-gdkpixbuf-2.0 gir1.2-ibus-1.0 ibus ibus-gtk ibus-gtk3 \
-  xdotool wmctrl x11-utils
+  xdotool wmctrl x11-utils libxres1
 ```
 
 When `DISPLAY`, `XDG_RUNTIME_DIR` or `DBUS_SESSION_BUS_ADDRESS` is missing,
@@ -794,6 +794,14 @@ windows have a `wN` marked `(no accessibility tree: use GUI)`. AX can activate,
 close, or wait for them; GUI reads and operates their content. If an AX root
 cannot be matched safely to a native window, the inventory reports incomplete
 coverage instead of issuing another reference for that window.
+
+Some X11 applications, including Tk applications, omit `_NET_WM_PID`.
+HCU uses the X-Resource extension to identify their local client process.
+This requires `libxres1` and X-Resource 1.2 or later on the X server.
+If the process identity cannot be verified, the inventory names the window
+as an incomplete observation and does not issue an actionable reference.
+Activation sends a window-manager request without moving the pointer.
+The result confirms the active window, not the focus of an inaccessible control.
 
 AX sees no applications, or `AX apps` reports windows that are not on the
 accessibility bus: restart those applications after the server has run

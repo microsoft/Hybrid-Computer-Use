@@ -7,6 +7,10 @@
 - Linux AX checks focused-field readback after keyboard typing and reports
   unconfirmed text explicitly. If window activation changes the resolved text
   field, typing stops before keyboard input.
+- Linux lists managed application windows that omit `_NET_WM_PID` when
+  X-Resource can identify their owner. Windows without an accessibility tree
+  support AX activation without pointer movement. Unverified owners produce
+  an explicit inventory issue instead of an actionable reference.
 
 ## 1.0.0
 
