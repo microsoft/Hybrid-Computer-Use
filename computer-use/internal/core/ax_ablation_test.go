@@ -419,7 +419,8 @@ func TestDiffAblationErrorsKeepTheirMessages(t *testing.T) {
 	_, _, ablated = reportActUnder(t, contract.AblateDiff, lose, clickOn("Interface", nil), "Interface")
 	if line := evidence(ablated); line["code"] != "effect_unknown" ||
 		fmt.Sprint(line) != fmt.Sprint(evidence(full)) ||
-		!strings.Contains(fmt.Sprint(line["message"]), "A fresh current-state observation follows") ||
+		!strings.Contains(fmt.Sprint(line["message"]), "post_action_observation_failed") ||
+		!strings.Contains(modelText(ablated), "A fresh current-state observation follows") ||
 		!strings.Contains(modelText(ablated), `checkbox "Interface"`) || strings.Contains(modelText(ablated), "effect:") {
 		t.Fatalf("lost readback under diff:\n%s\nfull:\n%s", modelText(ablated), modelText(full))
 	}

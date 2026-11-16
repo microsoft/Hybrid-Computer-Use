@@ -141,6 +141,18 @@ func TestTextReadBudgetDoesNotCutDeliveredPage(t *testing.T) {
 	}
 }
 
+func TestTextReadSurvivesMechanismAblations(t *testing.T) {
+	for _, ablation := range []string{"", contract.AblateDiff, contract.AblateBatching, contract.AblateWait} {
+		t.Run(ablation, func(t *testing.T) {
+			t.Setenv(contract.AblationEnv, ablation)
+			request, err := DecodeAXRequest(axTextReadCall("", "r1", "value", 0, 4000))
+			if err != nil || request.readText.Limit != 4000 {
+				t.Fatalf("read_text was lost in ablation: %v", err)
+			}
+		})
+	}
+}
+
 func TestProviderTruncationIsMarkedEvenWhenEllipsisFillsTheGap(t *testing.T) {
 	for _, total := range []int{501, 502, 503} {
 		record := &ElementRecord{Name: strings.Repeat("x", 500) + "...", TextLengths: map[string]int{"name": total}, TextTruncated: []string{"name"}}
