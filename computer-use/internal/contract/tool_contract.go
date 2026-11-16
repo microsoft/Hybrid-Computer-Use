@@ -495,10 +495,7 @@ const axToolDescription = "Accessibility for application windows. Linux: observe
 	"apps lists confirmed windows (wN, title, app, active) and reports incomplete inventories; missing windows then remain unknown. observe returns the window tree with " +
 	"rN refs. find returns matching rN. act runs ordered steps, checks them before input, " +
 	"stops at the first failed step, and reports each target's change, windows " +
-	"opened/closed/focused, and a diff. " +
-	"activate with wN or title switches the batch target for later refs and ref-less steps. " +
-	"Other-window refs fail until another activate selects their window. " +
-	"Each step reports its window; final observation uses the last executed window. " +
+	"opened/closed/focused, and a diff. " + axBatchWindowDescription +
 	"Copy rN/wN exactly; stale refs fail. keypress/type " +
 	"without ref use the batch target, initially the focused window unless refs or window_ref select it. select marks ref, its text substring, or ref..to_ref " +
 	"(paragraphs, cells) and reports the selection read back. activate/close take a title substring or wN. " +
@@ -512,6 +509,9 @@ const axToolDescription = "Accessibility for application windows. Linux: observe
 	`{"mode":"find","window_ref":"w2","query":{"role":"button","name_contains":"Save"}}`
 
 const (
+	axBatchWindowDescription = "activate with wN or title switches the batch target for later refs and ref-less steps. " +
+		"Other-window refs fail until another activate selects their window. " +
+		"Each step reports its window; final observation uses the last executed window. "
 	axActFullSentence = "act runs ordered steps, checks them before input, " +
 		"stops at the first failed step, and reports each target's change, windows " +
 		"opened/closed/focused, and a diff."
@@ -556,6 +556,9 @@ func publishedAXToolDescription() string {
 	}
 	text := strings.Replace(axToolDescription, axActFullSentence, sentence, 1)
 	text = strings.Replace(text, axActFullExample, example, 1)
+	if batching {
+		text = strings.Replace(text, axBatchWindowDescription, "", 1)
+	}
 	if diff {
 		text = strings.Replace(text, " and reports the selection read back", "", 1)
 	}

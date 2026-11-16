@@ -77,3 +77,33 @@ func TestPublishedTextWithoutAblationIsTheReleaseText(t *testing.T) {
 		t.Fatalf("instructions: %s", PublishedServerInstructions())
 	}
 }
+
+func TestBatchWindowDescriptionFollowsBatchingAblation(t *testing.T) {
+	for mask := 0; mask < 1<<len(AblationNames); mask++ {
+		var names []string
+		batching := false
+		for index, name := range AblationNames {
+			if mask&(1<<index) != 0 {
+				names = append(names, name)
+				batching = batching || name == AblateBatching
+			}
+		}
+		t.Run(strings.Join(names, ","), func(t *testing.T) {
+			t.Setenv(AblationEnv, strings.Join(names, ","))
+			for _, tool := range ToolDefinitions() {
+				if tool.Name != PublicToolAX {
+					continue
+				}
+				want := 1
+				if batching {
+					want = 0
+				}
+				if got := strings.Count(tool.Description, axBatchWindowDescription); got != want {
+					t.Fatalf("batch window description count = %d, want %d: %s", got, want, tool.Description)
+				}
+				return
+			}
+			t.Fatal("AX tool is missing")
+		})
+	}
+}

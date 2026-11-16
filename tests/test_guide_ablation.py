@@ -54,6 +54,20 @@ def test_ablations_only_remove_text_besides_the_statements(ablations):
     assert all(character in remaining for character in guide)
 
 
+@pytest.mark.parametrize("ablations", ALL_SETS, ids=lambda combo: ",".join(combo) or "full")
+def test_batch_window_guidance_follows_batching_ablation(ablations):
+    guide = " ".join(ablated_guide(source("hybrid.md"), "hybrid.md", ablations).split())
+    expected = 0 if "batching" in ablations else 1
+    for fragment in (
+        "Use `activate` with a `wN` or title to switch the batch target.",
+        "Later refs and ref-less steps use that window.",
+        "AX rejects refs from another window without explicit `activate`",
+        "activate back before reusing the previous window's refs.",
+        "Each step reports its window; the final observation uses the last executed window.",
+    ):
+        assert guide.count(fragment) == expected, fragment
+
+
 def test_diff_guide_keeps_the_returned_state_and_drops_the_report():
     guide = ablated_guide(source("hybrid.md"), "hybrid.md", ("diff",))
     # An act returns the whole tree, so reading the returned state stays.
