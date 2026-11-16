@@ -571,7 +571,7 @@ func axPublicErrorCode(full map[string]any) string {
 		return contract.AXCodeEffectUnknown
 	case failure == "ax_app_unavailable" || status == "app_unavailable":
 		return contract.AXCodeAppUnavailable
-	case failure == "ax_app_ambiguous":
+	case failure == "ax_app_ambiguous", failure == contract.AXCodeInvalidArgument:
 		return contract.AXCodeInvalidArgument
 	case failure == "invalid_argument", failure == "unsupported_action", failure == "input_failed":
 		if axEvidenceReportsInputEmission(full) || full["partial_input_possible"] == true || full["mutation_unknown"] == true {

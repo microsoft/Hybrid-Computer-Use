@@ -499,7 +499,7 @@ change canonical text, selectors, refs, or the response budget.
 
 - `act` accepts up to 64 ordered steps: actions
   `{type, ref|title, text|keys|value|direction|pages|to_ref}` and `wait`
-  steps. Argument errors reject the whole batch before input. The first step
+  steps. Structural argument errors reject the whole batch before input. The first step
   that fails stops the batch, and the result says how many ran.
 - The `rN` or `wN` refs name the window, so an `act` call with refs needs no
   `window_ref`. `window_ref` only sends ref-less `keypress` and `type` to a
@@ -577,6 +577,36 @@ retains `observation_failure_code` and `observation_required`. A no-input
 statement inside that follow-up describes the read, not the earlier action.
 Stale-window follow-ups report the unavailable source reference without
 repeating an input-delivery statement.
+
+### Linux key names
+
+AX and GUI `keypress` accept one chord, such as `["CTRL","S"]`.
+Named keys are case-insensitive. `KP_ADD`, `kp_add` and `KP_Add` name the
+same keypad key. The desktop keyboard layout must map the requested key.
+
+| Keys | Accepted names |
+| --- | --- |
+| Modifiers | `CTRL` / `CONTROL`, `SHIFT`, `ALT`, `SUPER` / `WIN` / `CMD` |
+| Editing | `ENTER` / `RETURN`, `TAB`, `ESC` / `ESCAPE`, `BACKSPACE`, `DELETE`, `INSERT`, `SPACE` |
+| Navigation | `LEFT`, `RIGHT`, `UP`, `DOWN` (also `ARROWLEFT`, `ARROWRIGHT`, `ARROWUP`, `ARROWDOWN`), `HOME`, `END` |
+| Pages | `PAGEUP` / `PAGE_UP` / `PRIOR`, `PAGEDOWN` / `PAGE_DOWN` / `NEXT` |
+| Function and lock keys | `F1` through `F12`, `CAPS_LOCK`, `NUM_LOCK`, `SCROLL_LOCK`, `PRINT`, `PAUSE`, `MENU` |
+| Keypad numbers | `KP_0` through `KP_9` |
+| Keypad operations | `KP_ADD`, `KP_SUBTRACT`, `KP_MULTIPLY`, `KP_DIVIDE`, `KP_DECIMAL`, `KP_EQUAL`, `KP_ENTER` |
+| Keypad navigation | `KP_HOME`, `KP_END`, `KP_LEFT`, `KP_RIGHT`, `KP_UP`, `KP_DOWN`, `KP_BEGIN`, `KP_INSERT`, `KP_DELETE`, `KP_PRIOR` / `KP_PAGE_UP`, `KP_NEXT` / `KP_PAGE_DOWN` |
+| Characters | Letters, digits and punctuation; use `PLUS` for `+`, which separates chord tokens |
+
+Other X11 key names are accepted when the desktop layout maps them.
+Named punctuation includes `COMMA`, `PERIOD`, `MINUS`, `SLASH` and `EQUAL`.
+Keypad symbols select their numeric or navigation layer regardless of
+NumLock. Explicit modifiers still apply. Letter chords use hardware keycodes,
+so `["CTRL","S"]` does not add Shift.
+
+Unknown names return `invalid_argument` with accepted spelling examples before
+that step takes focus or sends input. A known name without a hardware mapping
+fails explicitly. GUI validates all key steps before the batch starts; AX
+resolves Linux key names before each key step. Check `completed` before retrying
+an AX batch that already ran earlier steps.
 
 ### `select` steps
 

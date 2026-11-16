@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/microsoft/Hybrid-Computer-Use/computer-use/internal/contract"
 )
 
 func (s *Service) providerIdentityConflictResult(
@@ -195,6 +197,11 @@ func (s *Service) renderRuntimeReportedFailure(
 		"partial_input_possible": response.PartialInputPossible,
 		"mutation_unknown":       response.MutationUnknown,
 		"failure_facts_complete": response.FailureFactsComplete,
+	}
+	if response.FailureCode == contract.AXCodeInvalidArgument {
+		result.StructuredContent[contract.AXPublicErrorDetailKey] = publicRuntimeFailureText(response)
+		result.StructuredContent[contract.AXPublicErrorHintKey] =
+			"Correct the invalid argument before retrying; check completed before resending earlier actions."
 	}
 	if response.UnderlyingFailureCode != "" {
 		result.StructuredContent["underlying_failure_code"] =

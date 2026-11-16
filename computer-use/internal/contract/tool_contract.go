@@ -12,6 +12,11 @@ const (
 	PublicToolGUI = "GUI"
 )
 
+const keyChordDescription = "One chord, e.g. [\"CTRL\",\"S\"]. " +
+	"PAGEUP/PAGE_UP/PAGEDOWN/PAGE_DOWN. Linux named keys are case-insensitive, " +
+	"including KP_ADD, KP_SUBTRACT, KP_MULTIPLY, KP_DIVIDE, KP_DECIMAL, KP_ENTER, " +
+	"KP_0 through KP_9 and mapped X11 names. Use PLUS for '+'."
+
 const (
 	GUIMaxActions     = 64
 	GUIMaxScrollDelta = 2000
@@ -227,7 +232,7 @@ func axInputSchema() map[string]any {
 						"keys": map[string]any{
 							"type": "array", "minItems": 1, "maxItems": GUIMaxKeys,
 							"items":       map[string]any{"type": "string", "pattern": "^\\S(.*\\S)?$", "maxLength": GUIMaxKeyLength},
-							"description": "One chord, e.g. [\"CTRL\",\"S\"].",
+							"description": keyChordDescription,
 						},
 						"value":     map[string]any{"type": "string", "maxLength": MaxActionText},
 						"direction": map[string]any{"type": "string", "enum": []string{"up", "down", "left", "right"}},
@@ -269,7 +274,7 @@ func guiActionProperty(includeScreenshot bool) map[string]any {
 	}
 	keyArray := map[string]any{
 		"type":        "array",
-		"description": "PAGEUP/PAGE_UP/PAGEDOWN/PAGE_DOWN.",
+		"description": keyChordDescription,
 		"minItems":    1,
 		"maxItems":    GUIMaxKeys,
 		"items": map[string]any{

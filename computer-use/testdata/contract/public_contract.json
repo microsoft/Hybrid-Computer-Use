@@ -108,7 +108,7 @@
                       "type": "boolean"
                     },
                     "keys": {
-                      "description": "One chord, e.g. [\"CTRL\",\"S\"].",
+                      "description": "One chord, e.g. [\"CTRL\",\"S\"]. PAGEUP/PAGE_UP/PAGEDOWN/PAGE_DOWN. Linux named keys are case-insensitive, including KP_ADD, KP_SUBTRACT, KP_MULTIPLY, KP_DIVIDE, KP_DECIMAL, KP_ENTER, KP_0 through KP_9 and mapped X11 names. Use PLUS for '+'.",
                       "items": {
                         "maxLength": 64,
                         "pattern": "^\\S(.*\\S)?$",
@@ -616,7 +616,7 @@
                           "additionalProperties": false,
                           "properties": {
                             "keys": {
-                              "description": "PAGEUP/PAGE_UP/PAGEDOWN/PAGE_DOWN.",
+                              "description": "One chord, e.g. [\"CTRL\",\"S\"]. PAGEUP/PAGE_UP/PAGEDOWN/PAGE_DOWN. Linux named keys are case-insensitive, including KP_ADD, KP_SUBTRACT, KP_MULTIPLY, KP_DIVIDE, KP_DECIMAL, KP_ENTER, KP_0 through KP_9 and mapped X11 names. Use PLUS for '+'.",
                               "items": {
                                 "maxLength": 64,
                                 "pattern": "\\S",

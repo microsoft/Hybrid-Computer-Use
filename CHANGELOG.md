@@ -16,6 +16,10 @@
   window. Both actions read back the selection and fail explicitly when it
   cannot be confirmed. HTML list box mutations are refused because their
   accessibility actions do not emit both `input` and `change` events.
+- Linux AX and GUI accept case-insensitive keypad and X11 key names.
+  Named keys use their requested symbol, including keypad digits with NumLock
+  off. Unknown keys report `invalid_argument` with accepted spelling examples
+  before the key step takes focus or emits input.
 - AX reports text-value evidence for `type` steps without a ref, including
   unchanged or unreadable fields. A focus change alone does not confirm typing.
 - Linux AX checks focused-field readback after keyboard typing and reports
