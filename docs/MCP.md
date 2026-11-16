@@ -125,6 +125,27 @@ reads the binding before the next character reuses it. A call accepts at most
 focused control, for example submitting a form or moving focus. Text that
 contains NUL or an unpaired surrogate fails before any input on this path.
 
+### Keyboard navigation and application state
+
+The Linux key-event path sends keys in order. It does not wait for the
+application to finish each key's deferred commands before sending the next key.
+Input emission therefore does not prove that navigation finished before the
+following text started an edit.
+
+LibreOffice Calc can receive every Tab in a burst yet put the following text
+in an earlier cell. For example, typing `cancelled\t\t\t\tnote` from B2 can
+put `note` in C2 even though the selection later reaches F2. The same behavior
+occurs with direct XTEST input, without HCU or AT-SPI. Calc handles the first
+Tab synchronously while editing, but queues later navigation commands through
+its accelerator dispatcher. Following text can start an edit before those
+commands run. The final selection alone does not prove which cell received
+the text.
+
+For edits that depend on navigation, send individual `keypress` calls and
+inspect the resulting application state before typing into the destination.
+After committing the edit, read the destination cell's value as well as the
+selection. Tab navigation does not clear the cells it passes through.
+
 ### Accessibility on Linux
 
 Applications started by the user need no accessibility flags or
