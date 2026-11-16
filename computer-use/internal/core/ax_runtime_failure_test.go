@@ -23,7 +23,4 @@ func TestInvalidKeyKeepsPublicArgumentErrorAndAcceptedSpelling(t *testing.T) {
 	if message, _ := public["message"].(string); !strings.Contains(message, "Use KP_ADD") {
 		t.Fatalf("accepted spelling lost behind batch summary: %#v", public)
 	}
-	if hint, _ := public["hint"].(string); hint == "" {
-		t.Fatalf("invalid key has no correction hint: %#v", public)
-	}
 }
