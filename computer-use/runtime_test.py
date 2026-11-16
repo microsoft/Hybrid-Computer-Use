@@ -26,6 +26,7 @@ from runtime_tests.test_combo_edit import *  # noqa: F401,F403
 from runtime_tests.test_editable_click import *  # noqa: F401,F403
 from runtime_tests.test_select_boundaries import *  # noqa: F401,F403
 from runtime_tests.test_gtk_combo import *  # noqa: F401,F403
+from runtime_tests.test_chromium_dropdown import *  # noqa: F401,F403
 from runtime_tests.test_dropdown_navigation import *  # noqa: F401,F403
 from runtime_tests.test_chromium_windows import *  # noqa: F401,F403
 from runtime_tests.test_a11y_enable import *  # noqa: F401,F403

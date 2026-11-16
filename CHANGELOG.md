@@ -11,6 +11,11 @@
 - Missing, ambiguous, or moved provider-bound AX observation roots report `stale_ref` and
   request a new application observation without the invalid root.
 
+- Linux AX `set_value` and `select` choose Chromium and Electron HTML select
+  options through accessibility without opening the popup or activating the
+  window. Both actions read back the selection and fail explicitly when it
+  cannot be confirmed. HTML list box mutations are refused because their
+  accessibility actions do not emit both `input` and `change` events.
 - AX reports text-value evidence for `type` steps without a ref, including
   unchanged or unreadable fields. A focus change alone does not confirm typing.
 - Linux AX checks focused-field readback after keyboard typing and reports

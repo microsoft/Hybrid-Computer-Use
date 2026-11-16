@@ -53,6 +53,7 @@ from .ax_target_notes import (
 from .ax_snapshot_diagnostics import is_dropdown_item
 from .ax_records import gtk_combo_partner
 from .ax_select import perform_select
+from .ax_dropdown import is_chromium_select
 
 
 A11Y_CHANNEL = "[a11y]"
@@ -658,7 +659,7 @@ def _perform_set_value(
 ):
     if element is None:
         raise RuntimeError("unknown target ref")
-    if (node_role(element) == "combo box"
+    if is_chromium_select(element) or (node_role(element) == "combo box"
             and application_toolkit(element) == "gtk"
             and gtk_combo_partner(element, "combo box") is None):
         perform_select({"text": action_input.get("value", "")}, window,
