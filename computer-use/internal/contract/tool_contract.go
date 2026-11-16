@@ -32,6 +32,7 @@ const (
 	GUIMaxSettleMS     = 3000
 	AXBatchMaxActions  = 64
 	AXBatchMaxText     = 20000
+	AXMaxReadText      = 4000
 	MaxClickCount      = 10
 	MaxScrollPages     = 100
 	MaxVerifyTimeout   = 60000
@@ -202,6 +203,15 @@ func axInputSchema() map[string]any {
 			"root": map[string]any{
 				"type": "string", "pattern": "^(focused|r[1-9][0-9]*)$",
 				"description": "observe: subtree at rN or the focused element.",
+			},
+			"read_text": map[string]any{
+				"type": "object", "additionalProperties": false, "required": []string{"field"},
+				"description": "Linux observe only: read one live root rN without input or a tree. The ref identifies its window; omit app, scope and observe. Offsets count Unicode code points. Follow next_read to continue; pages are live reads, not a frozen document.",
+				"properties": map[string]any{
+					"field": map[string]any{"type": "string", "enum": []string{"name", "value", "description"}, "description": "value reads the node's AT-SPI Text interface; unavailable text returns an error. name and description read those attributes."},
+					"start": map[string]any{"type": "integer", "minimum": 0, "maximum": 2147483647, "description": "Start offset, inclusive; default 0."},
+					"limit": map[string]any{"type": "integer", "minimum": 1, "maximum": AXMaxReadText, "description": "Maximum code points; default 4000."},
+				},
 			},
 			"query": map[string]any{"$ref": "#/$defs/query"},
 			"limit": map[string]any{"type": "integer", "minimum": 1, "maximum": MaxAXFindPageSize, "description": "find page size; default 20."},
@@ -428,7 +438,7 @@ func GUIInputSchema() map[string]any {
 
 // axToolDescription is model-visible on every client, including ones that
 // compact the input schema. Clients may truncate descriptions at 1,000 bytes.
-const axToolDescription = "Accessibility for application windows. Modes: " +
+const axToolDescription = "Accessibility for application windows. Linux: observe with root rN and read_text reads bounded pages of full name, value (AT-SPI Text), or description; follow next_read. Modes: " +
 	"apps lists confirmed windows (wN, title, app, active) and reports incomplete inventories; missing windows then remain unknown. observe returns the window tree with " +
 	"rN refs. find returns matching rN. act runs ordered steps, checks them before input, " +
 	"stops at the first failed step, and reports each target's change, windows " +

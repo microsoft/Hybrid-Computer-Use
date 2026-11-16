@@ -467,8 +467,10 @@ application aN -> top-level window wN -> element rN
   read failure. Missing windows remain unknown. Returned refs remain usable;
   title-based selection, implicit focus, and window waits require a complete
   listing. A missing window cannot prove that a close succeeded.
-- `observe` returns a window tree or a diff with `rN` refs; `find` returns
-  matching `rN`, and a truncated result prints the call for the next page.
+- `observe` returns a window tree or a diff with `rN` refs. On Linux,
+  `observe` with `read_text` returns one text page instead of a tree.
+  `find` returns matching `rN`, and a truncated result prints the call for
+  the next page.
 - References describe current state; they are not durable selectors. Every
   mutation resolves its reference against the live accessibility tree again
   and rejects stale or cross-window targets before any input.
@@ -504,6 +506,77 @@ contains at most 80 Unicode code points, plus an ellipsis when clipped.
 Clipped excerpts also carry `text_truncated=true`. Text already displayed in a name, property,
 or matched-text field is not repeated. Excerpts are display-only and do not
 change canonical text, selectors, refs, or the response budget.
+
+### Linux text pages
+
+On Linux, `AX` can read a field of an existing element ref without expanding
+the tree. Use `mode:"observe"`, an `rN` in `root`, and `read_text`:
+
+```json
+{"mode":"observe","root":"r12","read_text":{"field":"value","start":0,"limit":4000}}
+```
+
+The Python SDK accepts the same object through
+`desktop.observe(root="r12", read_text={"field": "value"})`.
+
+`root` must identify a node from an earlier result. The server resolves its
+live identity and rejects stale refs. Omit `app`; the ref identifies its owning
+application and window. `window_ref` is optional and must match the ref's owner
+if supplied. Do not combine `read_text` with `scope` or the `observe`
+field, even with `observe:"full"`. The `mode` remains `"observe"`.
+
+| Field | Source |
+| --- | --- |
+| `value` | The node's AT-SPI Text interface. If Text is unavailable or unreadable, the call fails explicitly; it does not substitute another property. |
+| `name` | The complete accessible name, before tree clipping. |
+| `description` | The complete accessible description, before tree clipping. |
+
+Offsets and lengths count Unicode code points, not bytes or grapheme
+clusters. `start` is a nonnegative integer and defaults to `0`. `limit` is
+an integer from `1` to `4000` and defaults to `4000`. Each page includes
+`start` and excludes `end`. The server returns at most `limit` code points,
+stopping at `total` when fewer remain. `start == total` returns a valid empty
+page. `start > total`, negative offsets, and invalid limits fail explicitly.
+
+After the standard AX evidence, the text page starts with one JSON metadata
+line, followed by a newline and the raw page text. Metadata contains `ref`, `window_ref`,
+`field`, `start`, `end`, `total`, and `truncated`. When `end < total`,
+`truncated` is `true` and `next_read` contains the next AX call. Otherwise,
+`truncated` is `false` and there is no next page. Follow `next_read` rather
+than calculating the next offset from the requested limit.
+
+For example, reading `A🙂BCDE` with `start:0` and `limit:4` returns:
+
+```text
+{"ref":"r12","window_ref":"w3","field":"value","start":0,"end":4,"total":6,"truncated":true,"next_read":{"mode":"observe","window_ref":"w3","root":"r12","read_text":{"field":"value","start":4,"limit":4}}}
+A🙂BC
+```
+
+With `COMPUTER_USE_STRUCTURED_CONTENT=1`, `structuredContent.text_page.text`
+also contains the raw page text. Text pages preserve whitespace and line
+breaks; they do not use the tree's preview clipping rules.
+
+The inline response budget can reduce the page below the requested `limit`.
+Metadata and the raw text must fit together. If the budget cannot hold a
+page and its continuation, the call fails explicitly. Paging does not raise
+the global tree size cap.
+
+Each page reads the live application, not a frozen document. If the provider
+detects a character-count change during one page read, that call fails.
+Changes between pages and same-length edits can escape detection. Combining
+pages does not guarantee a consistent snapshot.
+
+In Linux trees, a clipped field reports `… field length=N codepoints` and
+a `read_text` call, with the field name and full length. Non-interactive
+content with AT-SPI Text gets a value preview of at most 80 code points,
+plus an ellipsis when clipped, and an `rN` when its visible node has a complete
+provider identity. Go's 40-code-point cell values, 80-code-point
+find excerpts, and existing name and description display rules still apply.
+
+Text pages, truncation hints, and the revised interaction guide change the
+model-visible contract. They require a new evaluation attempt. Do not mix
+instruction revisions within an attempt or infer performance from these
+interface changes.
 
 ### `act` steps
 
@@ -761,7 +834,8 @@ receive synthesized keyboard input through the toggle.
 
 ### Errors
 
-Every AX and GUI result starts with one JSON line: `ok`, and on failure
+Except for successful [text pages](#linux-text-pages), AX and GUI results
+start with one JSON line: `ok`, and on failure
 `code`, `path`, `message` and `hint` (a corrected call), then
 `input_emitted`, `completed` and `requested`. The public codes are:
 
@@ -898,7 +972,7 @@ the shell or the application.
 | `COMPUTER_USE_ERROR_CONTEXT` | `off` stops capturing fresh UI state after a failed call |
 | `COMPUTER_USE_OUTPUT_MODE` | `file` writes large outputs to files and returns their paths |
 | `COMPUTER_USE_OUTPUT_DIR`, `COMPUTER_USE_OUTPUT_THRESHOLD` | directory (default `computer-use` in the system temporary directory) and minimum size (4000 characters) for file output |
-| `COMPUTER_USE_MAX_INLINE_CHARS` | inline text budget per result, 24000 characters by default |
+| `COMPUTER_USE_MAX_INLINE_CHARS` | inline text budget per result, 24000 characters by default; smaller budgets reduce `read_text` page size without raising tree caps |
 | `COMPUTER_USE_TRACE_FILE` | append one JSONL line per AX action |
 | `COMPUTER_USE_PYTHON_BINARY` | Linux: interpreter for the provider, `python3` by default |
 | `COMPUTER_USE_RUNTIME_TIMEOUT_SECONDS` | base provider request timeout, 30 seconds by default |

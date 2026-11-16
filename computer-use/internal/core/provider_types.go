@@ -85,7 +85,22 @@ type ProviderSemanticTarget struct {
 	SourceIndex                     *int                      `json:"-"`
 }
 
+type ProviderTextRead struct {
+	Field string `json:"field"`
+	Start int    `json:"start"`
+	Limit int    `json:"limit"`
+}
+
+type ProviderTextPage struct {
+	Field string `json:"field"`
+	Start int    `json:"start"`
+	End   int    `json:"end"`
+	Total int    `json:"total"`
+	Text  string `json:"text"`
+}
+
 type ProviderObservationOptions struct {
+	TextRead          *ProviderTextRead  `json:"text_read,omitempty"`
 	TextLimit         *ProviderTextLimit `json:"text_limit,omitempty"`
 	MaxTreeNodes      int                `json:"max_tree_nodes,omitempty"`
 	MaxTreeDepth      int                `json:"max_tree_depth,omitempty"`
@@ -448,6 +463,7 @@ type ProviderInventoryIssue struct {
 }
 
 type ProviderAccessibilityResult struct {
+	TextRead                  *ProviderTextPage         `json:"text_read,omitempty"`
 	OK                        bool                      `json:"ok"`
 	Text                      string                    `json:"text,omitempty"`
 	Error                     string                    `json:"error,omitempty"`

@@ -13,6 +13,31 @@ import (
 
 var providerFixtureFS = os.DirFS("../..").(fs.ReadFileFS)
 
+func TestLinuxTextReadWireFixtures(t *testing.T) {
+	requestData := readProviderFixture(t, "text-read.request.json")
+	request, err := DecodeProviderWireRequest(requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertProviderFixtureRoundTrip(t, requestData, request)
+	responseData := readProviderFixture(t, "text-read.response.json")
+	response, err := DecodeProviderWireResponse(responseData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertProviderFixtureRoundTrip(t, responseData, response)
+	for _, field := range []string{"value", "name", "description"} {
+		request.Action.Observation.TextRead.Field = field
+		if err := request.Validate(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	request.Action.Observation.TextRead.Limit = contract.AXMaxReadText + 1
+	if err := request.Validate(); err == nil {
+		t.Fatal("oversize text read accepted")
+	}
+}
+
 type providerFixtureManifest struct {
 	SchemaVersion         int                     `json:"schema_version"`
 	Protocol              string                  `json:"protocol"`

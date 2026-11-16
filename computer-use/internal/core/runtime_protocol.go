@@ -17,6 +17,7 @@ type AXServiceRequest struct {
 	WindowAction       *WindowOperation       `json:"-"`
 	WindowBounds       *frame                 `json:"windowBounds,omitempty"`
 	TextLimit          any                    `json:"text_limit,omitempty"`
+	TextRead           *ProviderTextRead      `json:"-"`
 	MaxTreeNodes       int                    `json:"max_tree_nodes,omitempty"`
 	MaxTreeDepth       int                    `json:"max_tree_depth,omitempty"`
 	Prune              *bool                  `json:"prune,omitempty"`

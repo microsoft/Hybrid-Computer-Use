@@ -14,6 +14,17 @@ import (
 // TestEveryAXArgumentErrorHintDecodes checks that the table reaches every
 // axInvalid call in ax_public_request.go.
 var axBadCalls = []string{
+	`{"mode":"observe","read_text":{"field":"value"}}`,
+	`{"mode":"observe","root":"r1","read_text":{"field":"value"},"scope":"window"}`,
+	`{"mode":"observe","root":"r1","read_text":{"field":"value"},"app":"Editor"}`,
+	`{"mode":"observe","root":"r1","read_text":{"field":"value"},"observe":"tree"}`,
+	`{"mode":"observe","root":"r1","read_text":null}`,
+	`{"mode":"observe","root":"r1","read_text":{}}`,
+	`{"mode":"observe","root":"r1","read_text":{"field":"bad"}}`,
+	`{"mode":"observe","root":"r1","read_text":{"field":"value","start":-1}}`,
+	`{"mode":"observe","root":"r1","read_text":{"field":"value","limit":4001}}`,
+	`{"mode":"observe","root":"r1","read_text":{"field":"value","limit":true}}`,
+	`{"mode":"observe","root":"r1","read_text":{"field":"value","extra":true}}`,
 	// mode
 	`{}`,
 	`{"mode":"assert_ax"}`,

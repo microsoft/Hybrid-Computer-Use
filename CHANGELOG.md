@@ -26,6 +26,20 @@
   Unconfirmed values return `effect_unknown` and stop the batch, preserving input
   evidence and warning against retyping text that may remain in an editor.
 
+- Linux AX `observe` accepts `read_text` for an existing element `root`.
+  It pages AT-SPI Text values and complete accessible names or descriptions
+  in at most 4000 Unicode code points per call. Results include raw text,
+  offsets, total length, and a next-page call; structured text pages retain
+  the raw text too. Invalid ranges, owner mismatches, and unavailable Text
+  fail explicitly. Lower inline budgets reduce page size without raising
+  tree caps. Each page reads live content; detected length changes fail that
+  call, but cross-page and same-length edits have no snapshot guarantee.
+- Linux AX trees mark clipped fields with their full lengths and read calls.
+  Non-interactive Text content gets an 80-code-point preview and a bindable
+  ref. Existing Go cell, find excerpt, name, and description rules remain.
+- Text paging and the revised hybrid guide change the model-visible contract
+  and require a new evaluation attempt. Keep instruction revisions separate;
+  the interface changes do not establish evaluation performance.
 - AX batch errors expose the failed action's reason and a failure-specific
   recovery hint while retaining batch progress and input evidence. No-input
   argument and unsupported-operation failures use `invalid_argument`;

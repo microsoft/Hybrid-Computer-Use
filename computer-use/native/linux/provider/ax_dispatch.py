@@ -21,6 +21,7 @@ from .ax_select import perform_select
 from .ax_node_properties import (
     parse_text_limit,
     positive_int,
+    read_element_text,
 )
 
 from .x11_windows import (
@@ -298,7 +299,7 @@ def _resolve_target_operation(operation):
             input_events_emitted=False,
         )
     (
-        _element,
+        element,
         element_record,
         _semantic_note,
         _window,
@@ -312,10 +313,14 @@ def _resolve_target_operation(operation):
         operation.get("known_refs"),
         operation,
     )
-    return {
+    response = {
         "ok": True,
         "resolvedElement": element_record,
     }
+    text_read = (operation.get("observation") or {}).get("text_read")
+    if text_read is not None:
+        response["textRead"] = read_element_text(element, text_read)
+    return response
 
 
 def _perform_ax_action(

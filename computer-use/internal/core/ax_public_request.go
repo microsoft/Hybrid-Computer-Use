@@ -92,6 +92,7 @@ type axRequest struct {
 	limit     int
 	cursor    string
 	actions   []axBatchAction
+	readText  *ProviderTextRead
 }
 
 var (
@@ -103,7 +104,7 @@ var (
 
 var axModeFields = map[string][]string{
 	contract.AXModeApps:    {"mode"},
-	contract.AXModeObserve: {"mode", "app", "window_ref", "scope", "observe", "root"},
+	contract.AXModeObserve: {"mode", "app", "window_ref", "scope", "observe", "root", "read_text"},
 	contract.AXModeFind:    {"mode", "app", "window_ref", "scope", "query", "limit", "cursor"},
 	contract.AXModeAct:     {"mode", "window_ref", "actions", "observe"},
 }
@@ -208,11 +209,24 @@ func decodeAXCall(args map[string]any) (*axRequest, *axArgError) {
 	}
 	switch mode {
 	case contract.AXModeObserve:
+		if raw, present := args["read_text"]; present {
+			if request.readText, err = decodeAXTextRead(raw); err != nil {
+				return nil, err
+			}
+			if !AXElementRefPattern.MatchString(request.root) {
+				return nil, axInvalid("root", "read_text requires an element root rN", "").withRule(axRuleRequiredForMode).withFix(axSet("root", "r1"))
+			}
+			for _, field := range []string{"app", "scope", "observe"} {
+				if _, present := args[field]; present {
+					return nil, axInvalid(field, "read_text returns only the requested text page; omit "+field, "").withRule(axRuleFieldForMode).withFix(axRemove(field))
+				}
+			}
+		}
 		if request.observe == contract.ObserveNone {
 			return nil, axInvalid("observe", `observe "none" returns nothing; to wait without input, send act with only wait steps`,
 				"").withRule(axRuleObserveNone).withFix(axRemove("observe"))
 		}
-		if request.app == "" && request.windowRef == "" {
+		if request.app == "" && request.windowRef == "" && request.readText == nil {
 			return nil, axInvalid("app", "observe needs app or window_ref",
 				"").withRule(axRuleRequiredForMode).withFix(axSet("window_ref", "w1"))
 		}

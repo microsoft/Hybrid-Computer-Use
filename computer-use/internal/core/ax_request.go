@@ -126,6 +126,9 @@ func (s *Service) axDecodedRequest(request *axRequest) ToolCallResult {
 			contract.AXModeApps,
 		)
 	case contract.AXModeObserve:
+		if request.readText != nil {
+			return WithAXModeEvidence(s.axReadText(request), contract.AXModeObserve)
+		}
 		return s.axObserve(request, obs)
 	case contract.AXModeFind:
 		return s.axFind(request)

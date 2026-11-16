@@ -170,6 +170,10 @@ func compactAXModelEvidence(
 ) map[string]any {
 	compact := map[string]any{}
 	mode := strings.TrimSpace(fmt.Sprint(full["ax_mode"]))
+	if page := full["text_page"]; page != nil {
+		compact["text_page"] = page
+		compact["text_read"] = full["text_read"]
+	}
 	if mode == contract.AXModeFind {
 		for _, key := range []string{
 			"find_match_count", "find_page_start", "find_page_count", "next_cursor",

@@ -64,6 +64,8 @@ type windowSelection struct {
 }
 
 type ElementRecord struct {
+	TextTruncated                   []string                      `json:"textTruncated,omitempty"`
+	TextLengths                     map[string]int                `json:"textLengths,omitempty"`
 	Index                           int                           `json:"index"`
 	RuntimeID                       []int                         `json:"runtimeId,omitempty"`
 	RuntimeIDAliases                [][]int                       `json:"runtimeAliases,omitempty"`
