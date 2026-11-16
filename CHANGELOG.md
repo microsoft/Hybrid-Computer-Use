@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.1
+
 - AX reports when a window snapshot returns only its top-level root.
   The diagnostic asks for a screenshot and verification of prior action outcomes
   before retrying. It does not infer a renderer crash, reload the application,
