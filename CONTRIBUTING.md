@@ -76,6 +76,14 @@ user-visible changes. Commit subjects follow `area: summary`, for example
 `VERSION` is the only place that holds the release version. A release commit
 updates `VERSION` and moves the changelog entries under the new version.
 
+After the release commit is on `main`, push the tag `v<VERSION>` for it.
+`.github/workflows/release.yml` checks that the tag matches `VERSION`, builds
+the Linux, macOS and Windows archives, runs the MCP smoke test on each
+unpacked archive, and opens a draft release with the archives and their
+SHA-256. Review the draft and publish it. The workflow does not change an
+existing release: if the tag already has one, the last job fails and the
+archives stay on the workflow run.
+
 ## License
 
 By contributing you agree that your contribution is licensed under the MIT

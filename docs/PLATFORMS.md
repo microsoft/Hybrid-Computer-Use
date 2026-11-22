@@ -57,7 +57,15 @@ steps, matching the Go core.
 
 ## macOS
 
-Install Go 1.22+, Swift 6.2+ and the macOS SDK, then from the repository root:
+Each [release](https://github.com/microsoft/Hybrid-Computer-Use/releases)
+attaches `computer-use-<version>-macos-arm64.tar.gz` for Apple silicon. It
+holds the output of `make build-macos`, which is signed for local execution
+and not notarized. Unpack it into a folder and run `./computer-use doctor`
+there. If macOS refuses to start a copy downloaded with a browser, remove the
+quarantine attribute with `xattr -dr com.apple.quarantine <folder>`.
+
+To build it, install Go 1.22+, Swift 6.2+ and the macOS SDK, then from the
+repository root:
 
 ```bash
 make build-macos
@@ -101,8 +109,14 @@ macOS releases.
 
 ## Windows
 
-Install Go 1.22+, the .NET 8 SDK and PowerShell 7+. Windows PowerShell 5.1
-is not supported; installing the .NET SDK does not upgrade PowerShell.
+Each [release](https://github.com/microsoft/Hybrid-Computer-Use/releases)
+attaches `computer-use-<version>-windows-amd64.zip`, the package that
+`build.ps1` writes. Unpack it into a folder and run
+`.\computer-use.exe doctor` there; it needs no Go, .NET SDK or .NET runtime.
+
+To build it, install Go 1.22+, the .NET 8 SDK and PowerShell 7+. Windows
+PowerShell 5.1 is not supported; installing the .NET SDK does not upgrade
+PowerShell.
 From the repository root (`make build-windows` runs the same script):
 
 ```powershell

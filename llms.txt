@@ -26,6 +26,7 @@ Results reported in the paper (same model, harness, tasks and step budget; only 
 ## Quick start
 
 - Build: `make build-local` (Linux, Go 1.22+), `make build-macos` (Swift 6.2+), `make build-windows` (.NET 8, PowerShell 7). Run `artifacts/computer-use doctor` as the signed-in desktop user.
+- Download: each GitHub release attaches `computer-use` archives for Linux amd64, macOS arm64 and Windows amd64.
 - Codex: add `[mcp_servers.computer_use]` with `command = "/abs/path/to/artifacts/computer-use"` and `args = ["mcp"]` to `~/.codex/config.toml`.
 - Claude Code, Gemini CLI, Grok Build: `python3 -m hcu.render_agent_config` writes complete configurations.
 - Shell and Python: the `computer-use` CLI and the `hcu_sdk` Python package share one daemon per desktop.

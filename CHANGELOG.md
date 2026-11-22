@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Each release attaches `computer-use` archives for Linux amd64, macOS arm64
+  and Windows amd64, with their SHA-256 in the release notes. The macOS and
+  Windows archives hold the native provider and the license notices next to
+  `computer-use`, so they run without Go, Swift or the .NET SDK.
+
 ## 1.0.1
 
 - AX reports when a window snapshot returns only its top-level root.
