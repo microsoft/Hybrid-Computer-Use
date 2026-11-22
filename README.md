@@ -117,6 +117,9 @@ make build-macos   # macOS bundle in artifacts/macos/ (Swift 6.2+)
 make build-windows # Windows bundle in artifacts/windows/ (.NET 8, PowerShell 7)
 ```
 
+Or download a build: each [release](https://github.com/microsoft/Hybrid-Computer-Use/releases)
+attaches archives for Linux amd64, macOS arm64 and Windows amd64.
+
 Run `artifacts/computer-use doctor` as the signed-in desktop user to check
 permissions and dependencies. See [Native platforms](docs/PLATFORMS.md).
 
