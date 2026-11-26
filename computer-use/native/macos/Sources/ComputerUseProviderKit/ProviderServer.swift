@@ -165,6 +165,11 @@ public enum ProviderOperationAdapter {
             return result
         case "resolve_and_act":
             let intent = payload["intent"] as! String
+            if payload["require_input_ack"] as? Bool == true {
+                throw ComputerUseError.invalidArguments(
+                    "Receiver input acknowledgement is supported only by the Windows provider."
+                )
+            }
             var result: [String: Any] = [
                 "tool": intent,
                 "app": payload["app"]!,

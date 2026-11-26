@@ -45,6 +45,7 @@ internal sealed partial class ProviderServer
                 ["action"] = Fields(
                     "protocol_version",
                     "intent",
+                    "require_input_ack",
                     "app",
                     "app_identity",
                     "window_handle",
@@ -174,7 +175,8 @@ internal sealed partial class ProviderServer
                     payload["window_bounds"],
                     "action.window_bounds",
                     Fields("x", "y", "width", "height"));
-                ValidateObservation(payload["observation"], "action.observation");
+                ValidateObservation(payload["observation"], "action.observation",
+                    allowTextRead: StringValue(payload, "intent") == "resolve_target");
                 break;
             case "desktop":
                 ValidateDesktopActions(payload["actions"]);
@@ -252,7 +254,7 @@ internal sealed partial class ProviderServer
         ValidateOptionalString(value, "name", path);
     }
 
-    private static void ValidateObservation(JsonNode? node, string path)
+    private static void ValidateObservation(JsonNode? node, string path, bool allowTextRead = false)
     {
         var value = OptionalObject(node, path);
         if (value is null)
@@ -262,10 +264,28 @@ internal sealed partial class ProviderServer
         RejectUnknownFields(
             value,
             Fields(
-                "text_limit", "max_tree_nodes", "max_tree_depth",
+                "text_read", "text_limit", "max_tree_nodes", "max_tree_depth",
                 "prune", "boxes", "include_screenshot",
                 "capture_snapshot", "recheck_after_action"),
             path);
+        if (value.ContainsKey("text_read"))
+        {
+            if (!allowTextRead)
+            {
+                throw InvalidRequest($"{path}.text_read requires resolve_target.");
+            }
+            var read = value["text_read"] as JsonObject ??
+                throw InvalidRequest($"{path}.text_read must be an object.");
+            RejectUnknownFields(read, Fields("field", "start", "limit"), $"{path}.text_read");
+            var field = RequiredStringValue(read, "field");
+            var start = RequiredIntValue(read, "start");
+            var limit = RequiredIntValue(read, "limit");
+            if (field is not ("name" or "value" or "description") ||
+                start < 0 || limit < 1 || limit > WindowsTextRead.MaxPageCharacters)
+            {
+                throw InvalidRequest($"{path}.text_read has an invalid field or page range.");
+            }
+        }
         ValidatePositiveTextLimit(value, path);
         ValidateNonNegativeInteger(value, "max_tree_nodes", path);
         ValidateNonNegativeInteger(value, "max_tree_depth", path);

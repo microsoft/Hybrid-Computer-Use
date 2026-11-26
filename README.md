@@ -114,7 +114,7 @@ the open windows, and a compact AX diff or a screenshot.
 make build-local   # Linux binary in artifacts/computer-use (Go 1.22+)
 make smoke         # check that stdio MCP exposes AX and GUI
 make build-macos   # macOS bundle in artifacts/macos/ (Swift 6.2+)
-make build-windows # Windows bundle in artifacts/windows/ (.NET 8, PowerShell 7)
+make build-windows # Windows bundle in artifacts/windows/ (see native build dependencies)
 ```
 
 Run `artifacts/computer-use doctor` as the signed-in desktop user to check

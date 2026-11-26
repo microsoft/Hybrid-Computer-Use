@@ -528,10 +528,10 @@ Clipped excerpts also carry `text_truncated=true`. Text already displayed in a n
 or matched-text field is not repeated. Excerpts are display-only and do not
 change canonical text, selectors, refs, or the response budget.
 
-### Linux text pages
+### Text pages
 
-On Linux, `AX` can read a field of an existing element ref without expanding
-the tree. Use `mode:"observe"`, an `rN` in `root`, and `read_text`:
+On Linux and Windows, `AX` can read a field of an existing element ref without
+expanding the tree. Use `mode:"observe"`, an `rN` in `root`, and `read_text`:
 
 ```json
 {"mode":"observe","root":"r12","read_text":{"field":"value","start":0,"limit":4000}}
@@ -548,9 +548,13 @@ field, even with `observe:"full"`. The `mode` remains `"observe"`.
 
 | Field | Source |
 | --- | --- |
-| `value` | The node's AT-SPI Text interface. If Text is unavailable or unreadable, the call fails explicitly; it does not substitute another property. |
+| `value` on Linux | The node's AT-SPI Text interface. If Text is unavailable or unreadable, the call fails explicitly; it does not substitute another property. |
+| `value` on Windows | Native edit text or IAccessible2 text when supported. Otherwise, the provider uses UIA Value, Text or RangeValue. Each source must belong to the bound element. |
 | `name` | The complete accessible name, before tree clipping. |
 | `description` | The complete accessible description, before tree clipping. |
+
+The driver preserves the selected interface's text. It cannot restore
+formatting that an application omits from every available text interface.
 
 Offsets and lengths count Unicode code points, not bytes or grapheme
 clusters. `start` is a nonnegative integer and defaults to `0`. `limit` is
@@ -584,8 +588,15 @@ the global tree size cap.
 
 Each page reads the live application, not a frozen document. If the provider
 detects a character-count change during one page read, that call fails.
-Changes between pages and same-length edits can escape detection. Combining
-pages does not guarantee a consistent snapshot.
+Windows also compares two complete reads. Changes between samples can escape
+detection. Combining pages does not guarantee a consistent snapshot.
+
+Windows rejects protected text, unknown protection status and text longer than
+1,048,576 UTF-16 units. The whole read has a 15-second deadline. If a native
+call blocks past that deadline, the provider exits and the host retires it
+before starting a replacement. The failed read returns no partial text or
+input effect. Observe fresh state before continuing. The driver does not
+activate windows, change selection or use the clipboard to read text.
 
 In Linux trees, a clipped field reports `… field length=N codepoints` and
 a `read_text` call, with the field name and full length. Non-interactive

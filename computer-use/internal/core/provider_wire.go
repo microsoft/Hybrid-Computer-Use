@@ -480,6 +480,13 @@ func ValidateProviderActionRequest(request ProviderActionRequest) error {
 	if !validAccessibilityOperation(request.Intent) {
 		return fmt.Errorf("unsupported provider accessibility intent %q", request.Intent)
 	}
+	if request.RequireInputAck {
+		switch request.Intent {
+		case AccessibilityClick, AccessibilityScroll, AccessibilityKeypress, AccessibilitySetValue:
+		default:
+			return errors.New("require_input_ack requires a potentially queued input action")
+		}
+	}
 	if request.Observation.TextRead != nil && request.Intent != AccessibilityResolveTarget {
 		return errors.New("text_read requires resolve_target")
 	}

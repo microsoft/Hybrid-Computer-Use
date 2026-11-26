@@ -53,6 +53,50 @@ internal static partial class NativeDesktop
         return (!TextWakeFails, TextWakeFails ? 1400 : 0);
     }
     internal static bool ModifierDown { get; set; }
+    internal static bool AcknowledgementAvailable { get; set; } = true;
+    internal static bool AcknowledgementProcessed { get; set; } = true;
+    internal static bool AcknowledgementTargetCurrent { get; set; } = true;
+    internal static Action? OnAcknowledgement { get; set; }
+    internal static List<(nuint Tag, uint Message, uint Alternate, uint Word, bool CheckWord)> InputAcknowledgements { get; } = new();
+    internal static int AcknowledgementDisposals { get; set; }
+    internal static int AcknowledgementChecks { get; set; }
+    internal static long OrderTicks { get; set; }
+    internal static long ReceiptSequence { set => _inputReceiptTag = value; }
+    internal static nint KeyboardInputWindow() => Focus?.Focus ?? 0;
+    internal static nint PointerInputWindow(double x, double y) => Focus?.Focus ?? 0;
+    internal static void RequireInputAcknowledgementSupport()
+    {
+        if (!AcknowledgementAvailable)
+            throw new ProviderFailureException("input_order_unavailable", "precondition", "Fixture helper unavailable.");
+    }
+    private static long InputOrderTicks() => OrderTicks;
+    private static void InputOrderPause() => OrderTicks++;
+    private static IInputAcknowledgement InstallInputAcknowledgement(nint window)
+    {
+        RequireInputAcknowledgementSupport();
+        return new FixtureAcknowledgement(Focus?.Root ?? 0);
+    }
+    private sealed class FixtureAcknowledgement(nint root) : IInputAcknowledgement
+    {
+        public nint Root => root;
+        public bool TargetIsCurrent => AcknowledgementTargetCurrent;
+        public bool Processed
+        {
+            get
+            {
+                AcknowledgementChecks++;
+                OnAcknowledgement?.Invoke();
+                return AcknowledgementProcessed;
+            }
+        }
+        public void Arm(nuint tag, uint message, uint alternate, uint word, bool checkWord)
+        {
+            if (!AcknowledgementTargetCurrent)
+                throw new ProviderFailureException("input_order_unavailable", "precondition", "Fixture receiver disappeared.");
+            InputAcknowledgements.Add((tag, message, alternate, word, checkWord));
+        }
+        public void Dispose() => AcknowledgementDisposals++;
+    }
     private static bool TextModifierIsDown() => ModifierDown;
     private static TextFocus? ReadTextFocus() => Focus;
     private static long TextInputTicks() => TextTicks;
@@ -93,6 +137,13 @@ internal static partial class NativeDesktop
         TextSelections.Clear();
         TextEmissionOrder.Clear();
         OnTextSelection = null;
+        AcknowledgementAvailable = true;
+        AcknowledgementProcessed = true;
+        AcknowledgementTargetCurrent = true;
+        OnAcknowledgement = null;
+        InputAcknowledgements.Clear();
+        AcknowledgementDisposals = AcknowledgementChecks = 0;
+        OrderTicks = 0;
     }
 
     private static uint SendInput(uint count, Input[] inputs, int size)

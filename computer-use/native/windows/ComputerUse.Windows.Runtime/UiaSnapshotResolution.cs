@@ -68,22 +68,31 @@ internal sealed partial class UiaProvider
                 observedLease.CanonicalRecord,
                 target,
                 record);
+            var retiredLease = false;
             if (leaseFound &&
                 observedLease is not null &&
                 nameMatches &&
                 roleMatches &&
                 predicatesMatch)
             {
-                EnsureObservedElementLeaseUsable(
-                    observedLease.Element,
-                    target,
-                    record);
-                return observedLease.Element;
+                if (UiaElementReadRecovery.ValidateLease(
+                        () => EnsureObservedElementLeaseUsable(
+                            observedLease.Element, target, record),
+                        allowSemanticProviderRebind))
+                {
+                    return observedLease.Element;
+                }
+                // The same authorization already permits fresh canonical
+                // resolution on a cache miss. A retired COM proxy is another
+                // unusable cache entry, not a reason to skip that resolution.
+                retiredLease = true;
             }
             leaseDiagnostic["name_matches"] = nameMatches;
             leaseDiagnostic["role_matches"] = roleMatches;
             leaseDiagnostic["predicates_match"] = predicatesMatch;
-            leaseDiagnostic["result"] = leaseFound
+            leaseDiagnostic["result"] = retiredLease
+                ? "retired_element"
+                : leaseFound
                 ? "canonical_mismatch"
                 : "lookup_miss";
             Console.Error.WriteLine(leaseDiagnostic.ToJsonString());

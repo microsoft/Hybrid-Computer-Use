@@ -101,8 +101,10 @@ macOS releases.
 
 ## Windows
 
-Install Go 1.22+, the .NET 8 SDK and PowerShell 7+. Windows PowerShell 5.1
-is not supported; installing the .NET SDK does not upgrade PowerShell.
+Install Go 1.22+, the .NET 8 SDK, PowerShell 7+, Python 3 and LLVM.
+The input acknowledgement helper uses `clang`, `llvm-dlltool` and `lld-link`.
+Windows PowerShell 5.1 is not supported; installing the .NET SDK does not
+upgrade PowerShell.
 From the repository root (`make build-windows` runs the same script):
 
 ```powershell
@@ -111,9 +113,9 @@ pwsh -NoProfile -File ./computer-use/native/windows/build.ps1 -OutputDirectory "
 python scripts/smoke-mcp.py artifacts/windows/computer-use.exe
 ```
 
-Keep the self-contained `computer-use-windows-provider.exe` beside
-`computer-use.exe`; a separately installed .NET runtime is not required for
-that package. The provider runs under the MCP user's account and integrity
+Keep `computer-use-windows-provider.exe` and `computer-use-input-ack.dll`
+beside `computer-use.exe`. The package includes the .NET runtime.
+The provider runs under the MCP user's account and integrity
 level. It does not bypass UAC, secure desktops, or session isolation. UIA
 visibility reported by the application can differ from visible pixels;
 reobserve instead of forcing a stale or offscreen semantic target.
@@ -139,15 +141,16 @@ A text operation has a 15-second total budget and a 5-second per-message
 limit. A timeout preserves the uncertain UTF-16 span and message counts in
 `text_delivery`; do not replay the text automatically.
 
-A Windows GUI batch stops before non-empty `type` after mouse or keyboard
-input. An AX batch also stops before `type` or document-input `set_value` after
-`click`, `scroll` or `keypress`. Semantic Value/RangeValue writes remain
-allowed. Clearing a document with `set_value` sends Delete, so subsequent
-text or document replacement in the same batch also stops. Earlier input remains reported as emitted, with an unknown
-effect. A wait or screenshot does not confirm queue processing. Confirm
-focus and selection through a fresh observation before sending text in a
-separate call; splitting calls alone does not prove completion. Empty text
-and text before queued input remain allowed. `keypress` still sends real
+Windows mixed batches confirm that the original receiver processed earlier
+mouse and keyboard input before sending synchronous text. This confirmation
+requires the receiver process and provider to use the same native architecture.
+The input acknowledgement DLL must remain beside the provider.
+
+If confirmation fails, the batch stops before later actions. Earlier input
+remains reported as emitted, with an unknown effect. Observe current focus and
+selection before continuing; do not replay earlier input. A wait or screenshot
+alone does not confirm queue processing. The confirmation establishes input
+order; observe the application to verify its result. `keypress` sends real
 key-down and key-up events.
 
 Document `set_value` selects the full range through UIA TextPattern before

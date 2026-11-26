@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -71,6 +72,62 @@ func TestTextReadRecordsUseTheSameBoundedProviderRead(t *testing.T) {
 	}
 }
 
+func TestTextReadRecordsPreserveExactWhitespace(t *testing.T) {
+	for _, body := range []string{"", "spaces  ", "line\r\n", "中🙂\n\n", "\n\n"} {
+		service, backend, ref := textReadService(t)
+		count := utf8.RuneCountInString(body)
+		backend.accessibilityResponse = &ProviderAccessibilityResult{
+			OK: true, TextRead: &ProviderTextPage{Field: "value", Start: 0, End: count, Total: count, Text: body},
+		}
+		record := service.CallRecord("AX", axTextReadCall("", ref, "value", 0, 4000), CallOptions{})
+		if !record.OK {
+			t.Fatal(record)
+		}
+		want := contract.CompactJSON(record.Evidence["text_read"]) + "\n" + body
+		if record.Text != want {
+			t.Fatalf("record changed text page body=%q: got %q, want %q", body, record.Text, want)
+		}
+	}
+}
+
+func TestTextReadWindowsBackendKeepsReadOnlyWireContract(t *testing.T) {
+	snapshot := windowTransitionSnapshot("w2:0123456789abcdef0123456789abcdef", "Document", true)
+	recording := &recordingPlatformBackend{accessibilityResponse: &ProviderAccessibilityResult{OK: true, Snapshot: snapshot}}
+	service := NewServiceWithBackend(windowsRecordingBackend{recording})
+	initial := service.callTool("AX", map[string]any{"mode": "observe", "app": "Editor"})
+	if initial.IsError {
+		t.Fatal(ResultText(initial))
+	}
+	ref := service.currentSnapshot("Editor").AXSnapshot.ByIndex[3].Ref
+	recording.calls = nil
+	recording.accessibilityResponse = &ProviderAccessibilityResult{
+		OK: true, TextRead: &ProviderTextPage{Field: "description", Start: 1, End: 3, Total: 4, Text: "🙂中"},
+	}
+	result := service.callTool("AX", axTextReadCall("", ref, "description", 1, 2))
+	if result.IsError || len(recording.actionRequests) != 1 {
+		t.Fatalf("Windows text read failed: %s", ResultText(result))
+	}
+	request := recording.actionRequests[0]
+	data, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wire map[string]any
+	if err := json.Unmarshal(data, &wire); err != nil {
+		t.Fatal(err)
+	}
+	if request.Intent != AccessibilityResolveTarget || wire["input"] != nil ||
+		request.Observation.TextRead == nil || request.Observation.TextRead.Start != 1 ||
+		request.Observation.CaptureSnapshot == nil || *request.Observation.CaptureSnapshot ||
+		request.Observation.IncludeScreenshot == nil || *request.Observation.IncludeScreenshot {
+		t.Fatalf("Windows text read lost its no-input request: %#v", request)
+	}
+	if result.StructuredContent["input_events_emitted"] != false ||
+		result.StructuredContent["desktop_state_mutated"] != false {
+		t.Fatalf("Windows read changed its evidence scope: %#v", result)
+	}
+}
+
 func TestTextReadRejectsWrongWindowAndStaleRefBeforeProvider(t *testing.T) {
 	service, backend, ref := textReadService(t)
 	for _, call := range []map[string]any{
@@ -116,6 +173,22 @@ func TestTextReadPropagatesProviderFailures(t *testing.T) {
 	}
 }
 
+func TestTextReadTransportLossReturnsNoPageAndNoInput(t *testing.T) {
+	service, backend, ref := textReadService(t)
+	backend.err = errors.New("Windows provider exited during the text read")
+	result := service.callTool("AX", axTextReadCall("", ref, "value", 0, 3))
+	if !result.IsError || result.StructuredContent["text_page"] != nil ||
+		result.StructuredContent["input_events_emitted"] != false ||
+		result.StructuredContent["desktop_state_mutated"] != false ||
+		result.StructuredContent["mutation_unknown"] != false ||
+		result.StructuredContent["observation_required"] != true ||
+		result.StructuredContent["final_observation_returned"] != false ||
+		result.StructuredContent["retry_same_request"] != false ||
+		len(backend.calls) != 1 {
+		t.Fatalf("lost read returned text, input, or a replay: %#v, calls=%v", result, backend.calls)
+	}
+}
+
 func TestTextReadBudgetDoesNotCutDeliveredPage(t *testing.T) {
 	t.Setenv("COMPUTER_USE_MAX_INLINE_CHARS", "4096")
 	service, backend, ref := textReadService(t)
@@ -137,6 +210,37 @@ func TestTextReadBudgetDoesNotCutDeliveredPage(t *testing.T) {
 		}
 		if structured && final.StructuredContent["text_page"] == nil {
 			t.Fatal("structured consumers lost the text page")
+		}
+	}
+}
+
+func TestTextReadFinalizationPreservesExactWhitespace(t *testing.T) {
+	for _, body := range []string{"no newline", "spaces  ", "line\r\n", "中🙂\n\n", "\n\n"} {
+		for _, structured := range []bool{false, true} {
+			service, backend, ref := textReadService(t)
+			count := utf8.RuneCountInString(body)
+			backend.accessibilityResponse = &ProviderAccessibilityResult{
+				OK: true, TextRead: &ProviderTextPage{Field: "value", Start: 0, End: count, Total: count, Text: body},
+			}
+			result := service.callTool("AX", axTextReadCall("", ref, "value", 0, 4000))
+			if result.IsError {
+				t.Fatal(ResultText(result))
+			}
+			line := contract.CompactJSON(result.StructuredContent["text_read"])
+			want := line + "\n" + body
+			final := FinalizeForModel("AX", result, structured)
+			found := false
+			for _, item := range final.Content {
+				if item.Type == "text" && strings.HasPrefix(item.Text, line+"\n") {
+					found = true
+					if item.Text != want {
+						t.Fatalf("structured=%t body=%q was changed by formatting: %q", structured, body, item.Text)
+					}
+				}
+			}
+			if !found {
+				t.Fatal("text page disappeared during model finalization")
+			}
 		}
 	}
 }

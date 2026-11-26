@@ -187,9 +187,11 @@ internal sealed partial class UiaProvider
         return NativeDesktop.ListWindows(processId);
     }
 
-    private static bool TryInvoke(
+    private bool TryInvoke(
         AutomationElement? element,
-        Action<string, string> beforeInvoke)
+        Action<string, string> beforeInvoke,
+        Action<AutomationElement> verifyOwner,
+        Action<bool> recordReadback)
     {
         if (element is null)
         {
@@ -198,17 +200,43 @@ internal sealed partial class UiaProvider
         var invoke = element.Patterns.Invoke.PatternOrDefault;
         var selection = element.Patterns.SelectionItem.PatternOrDefault;
         var toggle = element.Patterns.Toggle.PatternOrDefault;
+        var expansion = element.ControlType == ControlType.ComboBox
+            ? element.Patterns.ExpandCollapse.PatternOrDefault
+            : null;
+        var legacySelection = selection is not null &&
+            element.Patterns.LegacyIAccessible.PatternOrDefault is not null;
+        var comboOwner = element.ControlType == ControlType.ListItem &&
+            legacySelection && invoke is not null
+            ? ComboBoxOptionOwner(element)
+            : null;
+        if (comboOwner is not null) { verifyOwner(comboOwner); }
+        var optionName = comboOwner is not null ? element.Name : string.Empty;
         switch (UiaClickRouting.Select(
             CanonicalRole(element.ControlType),
             invoke is not null,
             selection is not null,
             toggle is not null,
-            selection is not null &&
-                element.Patterns.LegacyIAccessible.PatternOrDefault is not null))
+            legacySelection,
+            expansion is not null,
+            comboOwner is not null))
         {
             case UiaClickRoute.Invoke:
-                beforeInvoke("uia.pattern.invoke", "provider_semantic");
+                if (comboOwner is not null && selection!.IsSelected.Value && string.Equals(
+                        comboOwner.Patterns.Value.Pattern.Value.Value,
+                        optionName, StringComparison.Ordinal))
+                {
+                    // Some bridged default actions toggle an already-selected
+                    // option off. A click on that option only needs to dismiss
+                    // its popup while retaining the existing value.
+                    beforeInvoke("uia.pattern.collapse.combobox_option", "provider_semantic");
+                    FinishComboBoxOption(comboOwner, optionName, verifyOwner, recordReadback);
+                    return true;
+                }
+                beforeInvoke(comboOwner is null ? "uia.pattern.invoke" :
+                    "uia.pattern.invoke.combobox_option", "provider_semantic");
                 invoke!.Invoke();
+                if (comboOwner is not null)
+                    FinishComboBoxOption(comboOwner, optionName, verifyOwner, recordReadback);
                 return true;
             case UiaClickRoute.SelectionItem:
                 beforeInvoke(
@@ -220,6 +248,21 @@ internal sealed partial class UiaProvider
                 beforeInvoke("uia.pattern.toggle", "provider_semantic");
                 toggle!.Toggle();
                 return true;
+            case UiaClickRoute.ExpandCollapse:
+                var state = expansion!.ExpandCollapseState.Value;
+                if (state == ExpandCollapseState.Collapsed)
+                {
+                    beforeInvoke("uia.pattern.expand", "provider_semantic");
+                    expansion.Expand();
+                    return true;
+                }
+                if (state == ExpandCollapseState.Expanded)
+                {
+                    beforeInvoke("uia.pattern.collapse", "provider_semantic");
+                    expansion.Collapse();
+                    return true;
+                }
+                return false;
             default:
                 return false;
         }
@@ -227,7 +270,7 @@ internal sealed partial class UiaProvider
 
     private static bool TryScroll(
         AutomationElement? element,
-        string direction,
+        WindowsScrollPlan plan,
         Action beforeScroll)
     {
         var scroll = element?.Patterns.Scroll.PatternOrDefault;
@@ -235,25 +278,24 @@ internal sealed partial class UiaProvider
         {
             return false;
         }
-        var horizontal = ScrollAmount.NoAmount;
-        var vertical = ScrollAmount.NoAmount;
-        switch (direction)
+        if (plan.Horizontal
+                ? !scroll.HorizontallyScrollable.Value
+                : !scroll.VerticallyScrollable.Value)
         {
-            case "up":
-                vertical = ScrollAmount.LargeDecrement;
-                break;
-            case "down":
-                vertical = ScrollAmount.LargeIncrement;
-                break;
-            case "left":
-                horizontal = ScrollAmount.LargeDecrement;
-                break;
-            case "right":
-                horizontal = ScrollAmount.LargeIncrement;
-                break;
+            return false;
         }
+        var target = plan.TargetPercent(
+            plan.Horizontal
+                ? scroll.HorizontalScrollPercent.Value
+                : scroll.VerticalScrollPercent.Value,
+            plan.Horizontal
+                ? scroll.HorizontalViewSize.Value
+                : scroll.VerticalViewSize.Value);
         beforeScroll();
-        scroll.Scroll(horizontal, vertical);
+        // -1 is UIA's NoScroll sentinel: leave the other axis unchanged.
+        scroll.SetScrollPercent(
+            plan.Horizontal ? target : -1,
+            plan.Horizontal ? -1 : target);
         return true;
     }
 

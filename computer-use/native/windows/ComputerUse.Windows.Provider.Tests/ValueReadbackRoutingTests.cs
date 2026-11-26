@@ -4,6 +4,28 @@ internal static class ValueReadbackRoutingTests
 {
     internal static void Run()
     {
+        foreach (var role in new[] { "cell", "textbox", "combobox", "slider" })
+        {
+            foreach (var legacy in new[] { false, true })
+            {
+                foreach (var nativeIdentity in new[] { false, true })
+                {
+                    var allowed = role != "cell" || !legacy || nativeIdentity;
+                    if (UiaSetValueRouting.AllowsValueWrite(role, legacy, nativeIdentity) != allowed)
+                        throw new InvalidDataException("The MSAA cell boundary changed unrelated value controls.");
+                    try
+                    {
+                        UiaSetValueRouting.RequireValueWriteAllowed(role, legacy, nativeIdentity);
+                        if (!allowed) throw new InvalidDataException("MSAA cell Value write was not rejected.");
+                    }
+                    catch (ProviderFailureException error) when (
+                        !allowed && error.Code == "capability_unsupported" &&
+                        error.Phase == "precondition" && !error.InputEventsEmitted && !error.MutationUnknown)
+                    {
+                    }
+                }
+            }
+        }
         var readbackDelayCount = 0;
         var readbackSampleCount = 0;
         var liveReadbackVerified = LiveValueReadback.Verify(
@@ -63,6 +85,35 @@ internal static class ValueReadbackRoutingTests
         {
             throw new InvalidDataException(
                 "A document's text, less its final paragraph mark, must decide when Value lags.");
+        }
+        var fallbackTextReads = 0;
+        if (!LiveValueReadback.VerifyTextValue(
+                "",
+                () => throw new InvalidOperationException("Value unavailable after clear"),
+                () =>
+                {
+                    fallbackTextReads++;
+                    return "\r";
+                },
+                _ => throw new InvalidDataException("Exact fresh Text must not need a retry.")) ||
+            fallbackTextReads != 1)
+        {
+            throw new InvalidDataException(
+                "An unreadable Value must not prevent exact Text readback after clearing.");
+        }
+        if (LiveValueReadback.VerifyTextValue(
+                "",
+                () => throw new InvalidOperationException("Value unavailable"),
+                () => "still present",
+                _ => { }) ||
+            LiveValueReadback.VerifyTextValue(
+                "",
+                () => throw new InvalidOperationException("stale Value target"),
+                () => throw new InvalidOperationException("stale Text target"),
+                _ => { }))
+        {
+            throw new InvalidDataException(
+                "Failed Value reads must not turn mismatched or unavailable Text into success.");
         }
         var multilineValueReads = 0;
         var multilineTextReads = 0;
@@ -226,6 +277,15 @@ internal static class ValueReadbackRoutingTests
             UiaClickRouting.Select("checkbox", true, true, true, true) != UiaClickRoute.Toggle)
         {
             throw new InvalidDataException("Bridged selection changed unrelated click patterns.");
+        }
+        if (UiaClickRouting.Select("combobox", false, false, false, true, true) != UiaClickRoute.ExpandCollapse ||
+            UiaClickRouting.Select("combobox", true, false, false, true, true) != UiaClickRoute.Invoke ||
+            UiaClickRouting.Select("combobox", false, false, false, true, false) is not null ||
+            UiaClickRouting.Select("treeitem", false, false, false, true, true) is not null ||
+            UiaClickRouting.Select("listitem", false, true, false, true, true) is not null)
+        {
+            throw new InvalidDataException(
+                "ComboBox semantic expansion must not change Invoke, tree, or list-item click contracts.");
         }
     }
 }

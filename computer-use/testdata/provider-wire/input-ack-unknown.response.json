@@ -1,0 +1,20 @@
+{
+  "protocol": "computer-use-provider",
+  "schema_version": 2,
+  "request_id": "req-input-ack",
+  "operation": "resolve_and_act",
+  "accessibility": {
+    "ok": false,
+    "error": "The receiver did not confirm input; do not replay it.",
+    "failure": {
+      "code": "effect_unknown",
+      "underlying_code": "input_order_unconfirmed",
+      "phase": "input_acknowledgement"
+    },
+    "mutation": {
+      "input_events_emitted": true,
+      "partial_input_possible": true,
+      "mutation_unknown": true
+    }
+  }
+}

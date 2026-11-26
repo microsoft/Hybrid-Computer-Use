@@ -404,7 +404,8 @@ func (s *Service) clickWithGlobalInput(app, elementIndex, declared string, x, y 
 		return result
 	}
 	request := AXServiceRequest{
-		App: app,
+		App:             app,
+		RequireInputAck: obs.requireInputAck,
 		Action: AXClickCommand{
 			AllowGlobalInput: allowGlobalInput,
 			X:                x, Y: y, ClickCount: clickCount,
@@ -483,7 +484,8 @@ func (s *Service) scrollWithGlobalInput(
 	}
 	if elementIndex == "" {
 		return s.actionResult(app, AXServiceRequest{
-			App: app,
+			App:             app,
+			RequireInputAck: obs.requireInputAck,
 			Action: axScrollCommand{
 				AllowGlobalInput: allowGlobalInput,
 				Direction:        normalized, Pages: pages, WindowCentre: true,
@@ -502,6 +504,7 @@ func (s *Service) scrollWithGlobalInput(
 	request := AXServiceRequest{
 		App:                app,
 		Action:             axScrollCommand{Direction: normalized, Pages: pages, AllowGlobalInput: allowGlobalInput},
+		RequireInputAck:    obs.requireInputAck,
 		TargetWindowHandle: targetWindowHandle,
 		IncludeScreenshot:  obs.resolvedScreenshot(), Observe: obs.resolvedMode(),
 		CaptureSnapshot: obs.captureSnapshot, LightReadback: obs.lightReadback,
@@ -562,6 +565,7 @@ func (s *Service) pressKey(
 	}
 	request := AXServiceRequest{
 		App: app, Action: axKeypressCommand{Key: key},
+		RequireInputAck:    obs.requireInputAck,
 		TargetWindowHandle: targetWindowHandle,
 		ExpectedWindow:     expectedWindow,
 		IncludeScreenshot:  obs.resolvedScreenshot(), Observe: obs.resolvedMode(),
@@ -626,6 +630,7 @@ func (s *Service) setValue(app, elementIndex, declared, value string, obs observ
 	request := AXServiceRequest{
 		App: app, Action: axSetValueCommand{Value: value,
 			RequireSemanticWrite: len(queuedInputPending) > 0 && queuedInputPending[0]},
+		RequireInputAck:   obs.requireInputAck,
 		IncludeScreenshot: obs.resolvedScreenshot(), Observe: obs.resolvedMode(),
 		CaptureSnapshot: obs.captureSnapshot, LightReadback: obs.lightReadback,
 	}

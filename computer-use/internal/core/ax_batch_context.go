@@ -16,8 +16,7 @@ type AXBatchContext struct {
 	expectedWindow *ProviderWindowExpectation
 	// boundByFocus marks a batch bound to the window that held keyboard
 	// focus before input; its keys and text must still reach that window.
-	boundByFocus              bool
-	windowsQueuedInputPending bool
+	boundByFocus bool
 	// report records the snapshots the batch passes through for the act
 	// report; nil outside act.
 	report *actReportTrace

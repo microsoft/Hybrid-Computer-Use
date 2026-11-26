@@ -5,6 +5,7 @@ internal enum UiaClickRoute
     Invoke,
     SelectionItem,
     Toggle,
+    ExpandCollapse,
 }
 
 internal static class UiaClickRouting
@@ -14,9 +15,15 @@ internal static class UiaClickRouting
         bool hasInvoke,
         bool hasSelectionItem,
         bool hasToggle,
-        bool hasLegacyIAccessible = false)
+        bool hasLegacyIAccessible = false,
+        bool hasExpandCollapse = false,
+        bool exactComboBoxOption = false)
     {
         var normalizedRole = role.Trim().ToLowerInvariant();
+        if (normalizedRole == "combobox" && hasExpandCollapse && !hasInvoke)
+        {
+            return UiaClickRoute.ExpandCollapse;
+        }
         if (normalizedRole == "radio")
         {
             // SelectionItem is the standard radio contract. A simultaneous
@@ -45,9 +52,12 @@ internal static class UiaClickRouting
         {
             if (hasSelectionItem)
             {
-                // A bridged Select is not a click. Do not substitute Invoke:
-                // a file item's default action can open it instead of select.
-                return hasLegacyIAccessible ? null : UiaClickRoute.SelectionItem;
+                // A bridged Select can change only accessibility state.
+                // Invoke is equivalent only for a proven combobox option:
+                // a file item's default action could open it instead.
+                return hasLegacyIAccessible
+                    ? exactComboBoxOption && hasInvoke ? UiaClickRoute.Invoke : null
+                    : UiaClickRoute.SelectionItem;
             }
             if (hasInvoke)
             {

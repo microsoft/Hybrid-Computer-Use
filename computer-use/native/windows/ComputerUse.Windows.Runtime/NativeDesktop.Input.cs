@@ -383,10 +383,21 @@ internal static partial class NativeDesktop
         }
         Interlocked.Increment(ref _inputGeneration);
         var values = inputs.ToArray();
+        try
+        {
+            ArmOrderedInput(values);
+        }
+        catch (ProviderFailureException) when (values.All(IsInputRelease))
+        {
+            // Losing a receiver must not prevent releasing held input.
+            // The ordered scope still fails before any later action.
+            _orderedInput?.ReceiptLost();
+        }
         var sent = SendInput(
             unchecked((uint)values.Length),
             values,
             Marshal.SizeOf<Input>());
+        _orderedInput?.Emitted(sent > 0);
         if (sent != unchecked((uint)values.Length))
         {
             var inputEventsEmitted = sent > 0;

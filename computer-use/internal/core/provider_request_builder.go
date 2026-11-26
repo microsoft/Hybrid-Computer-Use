@@ -28,6 +28,7 @@ func providerActionRequestFromOperation(
 		panic("provider action request requires a typed action command")
 	}
 	request := ProviderActionRequest{
+		RequireInputAck: operation.RequireInputAck,
 		ProtocolVersion: ProviderProtocolVersion,
 		Intent:          operation.Action.Intent(),
 		App:             operation.App,

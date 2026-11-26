@@ -7,6 +7,17 @@ internal sealed partial class ProviderServer
     private static void ValidateAction(JsonObject payload)
     {
         var intent = RequiredStringValue(payload, "intent");
+        if (payload.ContainsKey("require_input_ack") &&
+            (payload["require_input_ack"] is not JsonValue acknowledgement ||
+             !acknowledgement.TryGetValue<bool>(out _)))
+        {
+            throw InvalidRequest("action.require_input_ack must be a boolean.");
+        }
+        if (payload["require_input_ack"]?.GetValue<bool>() == true &&
+            intent is not ("click" or "scroll" or "keypress" or "set_value"))
+        {
+            throw InvalidRequest("require_input_ack requires a potentially queued input action.");
+        }
         var app = RequiredStringValue(payload, "app");
         if (string.IsNullOrWhiteSpace(app))
         {

@@ -222,9 +222,9 @@ func axInputSchema() map[string]any {
 			},
 			"read_text": map[string]any{
 				"type": "object", "additionalProperties": false, "required": []string{"field"},
-				"description": "Linux observe only: read one live root rN without input or a tree. The ref identifies its window; omit app, scope and observe. Offsets count Unicode code points. Follow next_read to continue; pages are live reads, not a frozen document.",
+				"description": "Linux and Windows observe only: read one live root rN without input or a tree. The ref identifies its window; omit app, scope and observe. Offsets count Unicode code points. Follow next_read to continue; pages are live reads, not a frozen document.",
 				"properties": map[string]any{
-					"field": map[string]any{"type": "string", "enum": []string{"name", "value", "description"}, "description": "value reads the node's AT-SPI Text interface; unavailable text returns an error. name and description read those attributes."},
+					"field": map[string]any{"type": "string", "enum": []string{"name", "value", "description"}, "description": "value reads AT-SPI Text on Linux or live UIA, IAccessible2, or native control text on Windows; unavailable or protected text returns an error. name and description read those attributes."},
 					"start": map[string]any{"type": "integer", "minimum": 0, "maximum": 2147483647, "description": "Start offset, inclusive; default 0."},
 					"limit": map[string]any{"type": "integer", "minimum": 1, "maximum": AXMaxReadText, "description": "Maximum code points; default 4000."},
 				},
@@ -491,7 +491,7 @@ func GUIInputSchema() map[string]any {
 
 // axToolDescription is model-visible on every client, including ones that
 // compact the input schema. Clients may truncate descriptions at 1,000 bytes.
-const axToolDescription = "Accessibility for application windows. Linux: observe with root rN and read_text reads bounded pages of full name, value (AT-SPI Text), or description; follow next_read. Modes: " +
+const axToolDescription = "Accessibility for application windows. Linux and Windows: observe with root rN and read_text reads bounded pages of full name, value, or description; follow next_read. Modes: " +
 	"apps lists confirmed windows (wN, title, app, active) and reports incomplete inventories; missing windows then remain unknown. observe returns the window tree with " +
 	"rN refs. find returns matching rN. act runs ordered steps, checks them before input, " +
 	"stops at the first failed step, and reports each target's change, windows " +
@@ -505,7 +505,7 @@ const axToolDescription = "Accessibility for application windows. Linux: observe
 	"it fails only if nothing changed. After a window wait, keys go to that window, after " +
 	"settle to the focused one. Skip waits the report answers. Errors return code and " +
 	"hint. Examples:\n" +
-	`{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"wait","window":"Export"},{"type":"type","text":"q3.csv"},{"type":"keypress","keys":["ENTER"]}]}` + "\n" +
+	axActFullExample + "\n" +
 	`{"mode":"find","window_ref":"w2","query":{"role":"button","name_contains":"Save"}}`
 
 const (
@@ -515,7 +515,7 @@ const (
 	axActFullSentence = "act runs ordered steps, checks them before input, " +
 		"stops at the first failed step, and reports each target's change, windows " +
 		"opened/closed/focused, and a diff."
-	axActFullExample  = `{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"wait","window":"Export"},{"type":"type","text":"q3.csv"},{"type":"keypress","keys":["ENTER"]}]}`
+	axActFullExample  = `{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"wait","window":"Export"}]}`
 	axWaitDescription = "A wait step sends no input and fails the batch on timeout: window (title, any app), " +
 		"query (as find), ref with value/state/text, or text; gone inverts. settle needs no " +
 		"prediction: it waits until the UI changes after the step before it and stops changing; " +
@@ -538,7 +538,7 @@ func publishedAXToolDescription() string {
 		subject = "act runs one input step with optional wait steps before or after it"
 		example = `{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"wait","window":"Export"}]}`
 	case wait:
-		example = `{"mode":"act","actions":[{"type":"click","ref":"r12"},{"type":"type","text":"q3.csv"},{"type":"keypress","keys":["ENTER"]}]}`
+		example = `{"mode":"act","actions":[{"type":"type","text":"q3.csv"},{"type":"keypress","keys":["ENTER"]}]}`
 	}
 	if !diff {
 		clauses = append(clauses, "reports each target's change, windows opened/closed/focused, and a diff")
@@ -574,16 +574,15 @@ func publishedAXToolDescription() string {
 
 var guiToolDescription = fmt.Sprintf("Full-desktop screenshot and pixel input. "+
 	`{"actions":[{"type":"screenshot"}]} alone observes; {"type":"zoom","region":[x0,y0,x1,y1]} alone `+
-	"enlarges a frame region to read small text and icons. Any other batch is checked before "+
-	"input and returns one final screenshot. x/y are pixels of the latest full-desktop image (screen "+
-	"width x height) from GUI or AX full/screenshot, which return the same frame. type/keypress go to the current focus, so click "+
-	"the field first. Batch the actions planned from one screenshot; end "+
-	"the batch after an action that may open, close, or move a window, and plan the rest "+
+	"enlarges a frame region. Each input batch is checked before input and returns one final screenshot. "+
+	"x/y are pixels of the latest full-desktop image from GUI or AX full/screenshot, which return the same frame. "+
+	"type/keypress go to the current focus; click the field first. Batch actions planned from one screenshot; end "+
+	"after an action that may open, close, or move a window, then plan the rest "+
 	"from the returned image. GUI cannot address windows; AX activates and closes them by "+
 	"title. wait is one second with no observation, at most %d s per batch. Errors return "+
-	"code and hint like AX; gui_frame_stale means nothing was sent: replan from the "+
+	"code and hint; gui_frame_stale means no input: replan from the "+
 	"returned screenshot. Example: "+
-	`{"actions":[{"type":"click","x":640,"y":412},{"type":"type","text":"hello"},{"type":"keypress","keys":["ENTER"]}]}`,
+	`{"actions":[{"type":"type","text":"hello"},{"type":"keypress","keys":["ENTER"]}]}`,
 	GUIMaxTotalWait)
 
 func AllToolDefinitions() []ToolDefinition {

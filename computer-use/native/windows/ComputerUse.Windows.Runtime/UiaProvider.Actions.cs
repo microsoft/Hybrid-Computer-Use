@@ -13,6 +13,8 @@ internal sealed partial class UiaProvider
     {
         var intent = RequiredString(request, "intent");
         var input = request["input"] as JsonObject ?? new JsonObject();
+        var requireInputAck = request["require_input_ack"]?.GetValue<bool>() == true;
+        if (requireInputAck) { NativeDesktop.RequireInputAcknowledgementSupport(); }
         // Text validation cannot follow focus preparation or document
         // selection: malformed UTF-16 must reject before either can mutate.
         if (intent is "type" or "set_value")
@@ -97,9 +99,18 @@ internal sealed partial class UiaProvider
 
         using var changed = new ManualResetEventSlim(false);
         using var eventHandler = new FailurePreservingDisposable(
-            root.RegisterStructureChangedEvent(
-                TreeScope.Subtree,
-                (_, _, _) => changed.Set()),
+            UiaElementReadRecovery.Read(() =>
+                root.RegisterStructureChangedEvent(
+                    TreeScope.Subtree,
+                    (_, _, _) =>
+                    {
+                        try { changed.Set(); }
+                        catch (ObjectDisposedException)
+                        {
+                            // An already queued UIA callback can outlive its
+                            // subscription; it must not throw back into COM.
+                        }
+                    })),
             error => Console.Error.WriteLine(
                 "[provider] AX structure event cleanup failed without " +
                 "replacing the primary action result: " +
@@ -141,6 +152,12 @@ internal sealed partial class UiaProvider
                         {
                             route = selectedRoute;
                             mutationAttempted = true;
+                        },
+                        owner => EnsureTargetLogicalWindow(owner, process, selectedWindow),
+                        verified =>
+                        {
+                            readbackSampled = true;
+                            readbackVerified = verified;
                         }))
                 {
                     inputEmitted = true;
@@ -164,13 +181,13 @@ internal sealed partial class UiaProvider
                     geometrySampled = true;
                     pointOwnerVerified = true;
                     route = "input.send_input.pointer";
-                    mutationAttempted = true;
-                    NativeDesktop.Click(
-                        point.X,
-                        point.Y,
-                        OptionalString(input, "mouse_button", "left"),
-                        OptionalInt(input, "click_count", 1));
-                    inputEmitted = true;
+                    SendQueuedInput(
+                        () => NativeDesktop.PointerInputWindow(point.X, point.Y),
+                        () => NativeDesktop.Click(
+                            point.X,
+                            point.Y,
+                            OptionalString(input, "mouse_button", "left"),
+                            OptionalInt(input, "click_count", 1)));
                 }
                     break;
                 case "set_value":
@@ -182,6 +199,29 @@ internal sealed partial class UiaProvider
                         "set_value requires an exact target.");
                 }
                 var requestedValue = OptionalString(input, "value", string.Empty);
+                UiaSetValueRouting.RequireValueWriteAllowed(
+                    CanonicalRole(element.ControlType),
+                    element.Patterns.LegacyIAccessible.PatternOrDefault is not null,
+                    Safe(() => element.Properties.RuntimeId.ValueOrDefault is { Length: > 0 }, false));
+                if (TrySetComboBoxValue(
+                        element, requestedValue,
+                        selectedRoute =>
+                        {
+                            route = selectedRoute;
+                            mutationAttempted = true;
+                        },
+                        owner => EnsureTargetLogicalWindow(owner, process, selectedWindow),
+                        verified =>
+                        {
+                            readbackSampled = true;
+                            readbackVerified = verified;
+                        },
+                        out var comboInputEmitted))
+                {
+                    inputEmitted = comboInputEmitted;
+                    if (!comboInputEmitted) { route = "uia.combobox.value_readback"; }
+                    break;
+                }
                 var rangePattern =
                     element.Patterns.RangeValue.PatternOrDefault;
                 var rangeWritable = rangePattern is not null &&
@@ -284,7 +324,8 @@ internal sealed partial class UiaProvider
                     inputEmitted = true;
                     if (requestedValue.Length == 0)
                     {
-                        NativeDesktop.PressKeys(new[] { "DELETE" });
+                        SendQueuedInput(NativeDesktop.KeyboardInputWindow,
+                            () => NativeDesktop.PressKeys(new[] { "DELETE" }));
                     }
                     else
                     {
@@ -380,16 +421,17 @@ internal sealed partial class UiaProvider
                     {
                         NativeDesktop.ActivateWindow(selectedWindow.Handle);
                     }
-                    mutationAttempted = true;
-                    NativeDesktop.PressKeys(
-                        new[] { RequiredString(input, "key") });
-                    inputEmitted = true;
+                    SendQueuedInput(NativeDesktop.KeyboardInputWindow,
+                        () => NativeDesktop.PressKeys(new[] { RequiredString(input, "key") }));
                     focusVerified = ForegroundOwnedBy(process.Id);
                     break;
                 case "scroll":
+                    var scrollPlan = WindowsScrollPlan.Create(
+                        OptionalString(input, "direction", "down"),
+                        OptionalDouble(input, "pages", 1));
                     if (TryScroll(
                             element,
-                            OptionalString(input, "direction", "down"),
+                            scrollPlan,
                             () =>
                             {
                                 route = "uia.scroll";
@@ -412,16 +454,10 @@ internal sealed partial class UiaProvider
                             exactElementRequired: element is not null);
                         geometrySampled = true;
                         pointOwnerVerified = true;
-                        mutationAttempted = true;
-                        NativeDesktop.Scroll(
-                            point.X,
-                            point.Y,
-                            0,
-                            (OptionalString(input, "direction", "down") == "up"
-                                ? -1
-                                : 1) *
-                            Math.Max(1, OptionalDouble(input, "pages", 1)));
-                        inputEmitted = true;
+                        var delta = scrollPlan.WheelDelta;
+                        SendQueuedInput(
+                            () => NativeDesktop.PointerInputWindow(point.X, point.Y),
+                            () => NativeDesktop.Scroll(point.X, point.Y, delta.X, delta.Y));
                     }
                     break;
                 default:
@@ -547,6 +583,12 @@ internal sealed partial class UiaProvider
                     route, geometrySampled, focusVerified,
                     readbackSampled, readbackVerified, false, pointOwnerVerified));
         }
+        catch (Exception error) when (
+            !mutationAttempted && !pointerPreparationAttempted &&
+            UiaElementReadRecovery.IsElementNotAvailable(error))
+        {
+            throw UiaElementReadRecovery.Stale();
+        }
         catch (ProviderFailureException error) when (
             mutationAttempted || error.FocusPreparation.HasValue)
         {
@@ -578,6 +620,17 @@ internal sealed partial class UiaProvider
                     readbackSampled,
                     readbackVerified,
                     inputEmitted, pointOwnerVerified));
+        }
+
+        void SendQueuedInput(Func<nint> receiver, Action send)
+        {
+            using var ordered = requireInputAck
+                ? NativeDesktop.BeginOrderedInput(receiver())
+                : null;
+            mutationAttempted = true;
+            send();
+            inputEmitted = true;
+            ordered?.Complete();
         }
 
         void TypeInSelectedWindow(string text)

@@ -3,7 +3,8 @@
 param(
     [ValidateSet("amd64", "arm64")]
     [string]$Architecture = "amd64",
-    [string]$OutputDirectory = ""
+    [string]$OutputDirectory = "",
+    [string]$InputAckLibraryPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,6 +19,37 @@ if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
 }
 [void](New-Item -ItemType Directory -Force -Path $OutputDirectory)
 $OutputDirectory = (Resolve-Path $OutputDirectory).Path
+$inputAckDestination = Join-Path $OutputDirectory "computer-use-input-ack.dll"
+if ([string]::IsNullOrWhiteSpace($InputAckLibraryPath)) {
+    $python = @("python3", "python") | ForEach-Object {
+        Get-Command $_ -ErrorAction SilentlyContinue
+    } | Select-Object -First 1
+    if (-not $python) {
+        throw "Python 3 is required to build the Windows input acknowledgement helper"
+    }
+    & $python.Source (Join-Path $PSScriptRoot "input-ack/build.py") `
+        --architecture $Architecture --output $inputAckDestination
+    if ($LASTEXITCODE -ne 0) {
+        throw "Windows input acknowledgement helper build failed with exit code $LASTEXITCODE"
+    }
+} else {
+    Copy-Item -LiteralPath $InputAckLibraryPath -Destination $inputAckDestination -Force
+}
+$helperStream = [System.IO.File]::OpenRead($inputAckDestination)
+$helperReader = [System.IO.BinaryReader]::new($helperStream)
+try {
+    if ($helperReader.ReadUInt16() -ne 0x5a4d) { throw "Input acknowledgement helper is not a PE image" }
+    $helperStream.Position = 0x3c
+    $peOffset = $helperReader.ReadUInt32()
+    $helperStream.Position = $peOffset
+    if ($helperReader.ReadUInt32() -ne 0x00004550) { throw "Input acknowledgement helper has no PE signature" }
+    $expectedMachine = if ($Architecture -eq "arm64") { 0xaa64 } else { 0x8664 }
+    if ($helperReader.ReadUInt16() -ne $expectedMachine) {
+        throw "Input acknowledgement helper architecture does not match $Architecture"
+    }
+} finally {
+    $helperReader.Dispose()
+}
 foreach ($name in @("LICENSE", "THIRD_PARTY_NOTICES.md")) {
     Copy-Item -LiteralPath (Join-Path $repositoryRoot $name) -Destination $OutputDirectory -Force
 }

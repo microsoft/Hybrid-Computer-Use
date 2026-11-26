@@ -138,6 +138,12 @@ from .ax_input_delivery import (
 
 def perform_provider_request(operation_kind, payload):
     """Dispatch one provider operation that validate_request() accepted."""
+    if operation_kind == "resolve_and_act" and payload.get("require_input_ack"):
+        raise OperationFailure(
+            "Receiver input acknowledgement is supported only by the Windows provider.",
+            "capability_unsupported",
+            "precondition",
+        )
     action_intent = None
     if operation_kind == "resolve_and_act":
         action_intent = payload.get("intent")

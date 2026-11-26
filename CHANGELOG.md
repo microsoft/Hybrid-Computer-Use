@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Windows AX and GUI batches can type after mouse or keyboard actions when
+  the receiving process has the provider's native architecture. The provider
+  waits for the receiving thread to process earlier input. Missing
+  acknowledgements stop later actions without replaying input, and cleanup
+  releases held keys and buttons even when the target disappears.
+- Windows AX `read_text` reads UIA, IAccessible2 and native Edit text with
+  Unicode paging. It checks target ownership and protected controls, preserves
+  multiline content, and bounds native reads with a process watchdog. A timed
+  out read retires the provider and requires a fresh observation.
+- Windows AX recovers retired UIA proxies only under the original target
+  authorization. Combo box actions verify option ownership and selection,
+  close the popup after selection, and avoid invoking an already selected
+  option again. Ambiguous and unsupported operations fail before input.
+- Windows AX scroll pages use the control's viewport size. MSAA-projected
+  cell writes that would change only accessibility state are rejected
+  instead of being reported as document edits.
+- Windows builds include the input acknowledgement helper DLL alongside the
+  Go executable and native provider.
+
 ## 1.0.1
 
 - AX reports when a window snapshot returns only its top-level root.

@@ -5,6 +5,10 @@ using ComputerUse.Windows.Runtime;
 SelectionTests.Run();
 KeyboardFocusTests.Run();
 DocumentTextTests.Run();
+WindowsTextReadTests.Run();
+WindowsReadOnlyDeadlineTests.Run();
+ReadTextProviderTests.Run();
+InputAcknowledgementRequestTests.Run();
 WindowReferenceReadTests.Run();
 if (args is ["--selection-contract"])
 {
@@ -104,7 +108,11 @@ foreach (var node in invalid)
 
 UiaRootProjectionTests.Run();
 ValueReadbackRoutingTests.Run();
+ScrollPlanTests.Run();
 SemanticResolutionTests.Run();
+UiaElementReadRecoveryTests.Run();
+UiaComboBoxOptionOwnerTests.Run();
+UiaComboBoxOptionSearchTests.Run();
 
 var validSchemaCases = new[]
 {

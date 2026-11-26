@@ -56,6 +56,27 @@ void CheckPointer(JsonObject payload, string expectedMessage = message)
 }
 
 Run("pointer-envelope-exact", () => CheckPointer(Payload(Pointer())));
+Run("receiver-acknowledgement-preserves-stage", () =>
+{
+    foreach (var operation in new[] { "resolve_and_act", "desktop_execute_batch" })
+    {
+        var error = new ProviderFailureException(
+            "input_order_unconfirmed", "input_acknowledgement",
+            "The receiver did not confirm input; do not replay it.",
+            inputEventsEmitted: true, mutationUnknown: true);
+        var envelope = ProviderServer.TestEnvelope(error, operation);
+        var payload = envelope[operation == "resolve_and_act" ? "accessibility" : "desktop"]!;
+        Check(payload["failure"]!["code"]!.GetValue<string>() == "effect_unknown",
+            "Unconfirmed input was reported as a known outcome");
+        Check(payload["failure"]!["phase"]!.GetValue<string>() == "input_acknowledgement",
+            "The acknowledgement failure was relabelled as an observation failure");
+        Check(payload["failure"]!["underlying_code"]!.GetValue<string>() == "input_order_unconfirmed",
+            "The receiver failure code was lost");
+        Check(payload["error"]!.GetValue<string>() == error.Message, "Recovery instruction was lost");
+        Check(payload["mutation"]!["input_events_emitted"]!.GetValue<bool>() &&
+            payload["mutation"]!["mutation_unknown"]!.GetValue<bool>(), "Input facts were lost");
+    }
+});
 Run("action-catch-preserves-evidence-only-emission", () =>
 {
     var error = new ProviderFailureException("dispatch_failed", "emission", "evidence",

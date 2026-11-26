@@ -100,6 +100,15 @@ public enum ProviderRequestValidator {
                 throw invalid("unsupported provider accessibility intent \(intent)")
             }
             try requireNonblankString(payload["app"], path: "\(path).app")
+            if let acknowledgement = payload["require_input_ack"] {
+                guard let flag = acknowledgement as? NSNumber,
+                      CFGetTypeID(flag) == CFBooleanGetTypeID() else {
+                    throw invalid("require_input_ack must be a boolean")
+                }
+                if flag.boolValue && !["click", "scroll", "keypress", "set_value"].contains(intent) {
+                    throw invalid("require_input_ack requires a potentially queued input action")
+                }
+            }
             if intent == "set_value",
                let input = payload["input"] as? [String: Any],
                let constraint = input["require_semantic_write"] {

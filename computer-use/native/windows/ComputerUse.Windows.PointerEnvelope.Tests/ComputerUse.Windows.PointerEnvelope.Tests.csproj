@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../ComputerUse.Windows.Runtime/ProviderRequestValidation.cs" Link="ProviderRequestValidation.cs" />
+    <Compile Include="../ComputerUse.Windows.Runtime/WindowsTextRead.cs" Link="WindowsTextRead.cs" />
     <Compile Include="../ComputerUse.Windows.Runtime/ProviderActionValidation.cs" Link="ProviderActionValidation.cs" />
     <Compile Include="../ComputerUse.Windows.Runtime/ProviderDesktopValidation.cs" Link="ProviderDesktopValidation.cs" />
     <Compile Include="../ComputerUse.Windows.Provider.Tests/NativeManifestTests.cs" Link="NativeManifestTests.cs" />

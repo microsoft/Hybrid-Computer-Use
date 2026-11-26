@@ -53,8 +53,8 @@ func axTextReadError(message string) ToolCallResult {
 }
 
 func (s *Service) axReadText(request *axRequest) ToolCallResult {
-	if runtime.GOOS != "linux" {
-		return axTextReadError("read_text is supported only by the Linux provider")
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		return axTextReadError("read_text is supported only by the Linux and Windows providers")
 	}
 	identity, err := s.resolveAXReadIdentity(request.app, request.windowRef, request.root)
 	if err != nil {
@@ -88,7 +88,11 @@ func (s *Service) axReadText(request *axRequest) ToolCallResult {
 	}
 	response, err := s.callProviderAction(providerActionRequestFromOperation(operation))
 	if err != nil {
-		return axTextReadError(err.Error())
+		result := axTextReadError(err.Error())
+		result.StructuredContent["observation_required"] = true
+		result.StructuredContent["final_observation_returned"] = false
+		result.StructuredContent["retry_same_request"] = false
+		return result
 	}
 	if !response.OK {
 		return s.runtimeReportedFailure(identity.appToken, operation, *response)

@@ -618,7 +618,8 @@ internal sealed partial class UiaProvider
         var textPattern = facts.Text
             ? UiaSnapshotNodeReads.OptionalPattern(() => element.Patterns.Text.PatternOrDefault)
             : null;
-        var valueWritable = facts.Value && !facts.ValueReadOnly;
+        var valueWritable = facts.Value && !facts.ValueReadOnly &&
+            UiaSetValueRouting.AllowsValueWrite(role, facts.LegacyIAccessible, facts.RuntimeId.Length > 0);
         var rangeValueWritable = facts.RangeValue && !facts.RangeValueReadOnly;
         var actions = new JsonArray();
         AddAction(actions, facts.Invoke, "invoke");

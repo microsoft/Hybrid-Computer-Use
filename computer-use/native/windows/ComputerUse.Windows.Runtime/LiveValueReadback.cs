@@ -50,10 +50,22 @@ internal static class LiveValueReadback
     {
         return Poll(() =>
         {
-            if (!HasLineBreak(expected) &&
-                string.Equals(readFreshValue(), expected, StringComparison.Ordinal))
+            if (!HasLineBreak(expected))
             {
-                return true;
+                // Value and Text are independent readback paths. A control
+                // can stop answering Value while its exact Text range remains
+                // readable; the Value failure must not skip that evidence.
+                try
+                {
+                    if (string.Equals(readFreshValue(), expected, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // The Text callback must resolve and verify the same target.
+                }
             }
             // A document's text is its content. Rich edit controls end it
             // with one paragraph mark, and after a typed replacement their

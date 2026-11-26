@@ -216,14 +216,14 @@ foreach (var pixels in new[] { false, true })
     cases++;
 }
 
-// Consecutive keys wait for the application's input queue, not a fixed delay.
+// Consecutive queued keys do not use the process-startup idle API.
 {
     NativeDesktop.Reset();
     var watch = System.Diagnostics.Stopwatch.StartNew();
     DesktopProvider.ExecuteBatch(JsonNode.Parse(
         """{"actions":[{"type":"keypress","keys":["A"]},{"type":"keypress","keys":["B"]}]}""")!.AsObject());
-    Check(NativeDesktop.InputIdleWaits == 1 && watch.ElapsedMilliseconds < 400,
-        "Two keys did not wait once for input idle, or slept a fixed delay");
+    Check(NativeDesktop.InputIdleWaits == 0 && watch.ElapsedMilliseconds < 400,
+        "Consecutive keys used the cached process-idle API or an extra fixed delay");
     cases++;
 }
 // Text retains UTF-16 ordering and literal tabs; CRLF is one line break.

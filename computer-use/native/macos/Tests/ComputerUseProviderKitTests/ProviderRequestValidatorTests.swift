@@ -32,6 +32,25 @@ private func envelope(
     }
 }
 
+@Test func receiverAcknowledgementCannotDispatchOnMacOS() throws {
+    let payload: [String: Any] = [
+        "protocol_version": 2, "intent": "keypress", "app": "TextEdit",
+        "window_handle": "w2:fixture", "require_input_ack": true,
+        "input": ["key": "CTRL+A"],
+    ]
+    let request = envelope(operation: "resolve_and_act", payloadName: "action", payload: payload)
+    try ProviderRequestValidator.validate(request)
+    #expect(throws: (any Error).self) {
+        try ProviderOperationAdapter.operation(operation: "resolve_and_act", payload: payload)
+    }
+    for invalid in [NSNull(), "true", 1] as [Any] {
+        var changed = payload
+        changed["require_input_ack"] = invalid
+        let malformed = envelope(operation: "resolve_and_act", payloadName: "action", payload: changed)
+        #expect(throws: (any Error).self) { try ProviderRequestValidator.validate(malformed) }
+    }
+}
+
 @Test func selectWirePreservesTextAndRangeEnd() async throws {
     let inputs: [[String: Any]] = [[:], ["text": "😀中文"], ["to_target": ["providerObjectPath": "end"]]]
     for input in inputs {

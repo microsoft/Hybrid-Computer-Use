@@ -217,6 +217,7 @@ type ProviderObserveRequest struct {
 type ProviderActionRequest struct {
 	ProtocolVersion int                           `json:"protocol_version"`
 	Intent          AccessibilityOperation        `json:"intent"`
+	RequireInputAck bool                          `json:"require_input_ack,omitempty"`
 	App             string                        `json:"app"`
 	AppIdentity     *ProviderAppIdentity          `json:"app_identity,omitempty"`
 	WindowHandle    string                        `json:"window_handle,omitempty"`
@@ -238,6 +239,7 @@ type ProviderActionRequest struct {
 type providerActionRequestWire struct {
 	ProtocolVersion int                        `json:"protocol_version"`
 	Intent          AccessibilityOperation     `json:"intent"`
+	RequireInputAck bool                       `json:"require_input_ack,omitempty"`
 	App             string                     `json:"app"`
 	AppIdentity     *ProviderAppIdentity       `json:"app_identity,omitempty"`
 	WindowHandle    string                     `json:"window_handle,omitempty"`
@@ -277,6 +279,7 @@ func (request ProviderActionRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(providerActionRequestWire{
 		ProtocolVersion: request.ProtocolVersion,
 		Intent:          request.Intent,
+		RequireInputAck: request.RequireInputAck,
 		App:             request.App,
 		AppIdentity:     request.AppIdentity,
 		WindowHandle:    request.WindowHandle,
@@ -295,9 +298,20 @@ func (request *ProviderActionRequest) UnmarshalJSON(data []byte) error {
 	if err := DecodeProviderWireJSON(data, &wire); err != nil {
 		return err
 	}
+	var acknowledgement struct {
+		Value json.RawMessage `json:"require_input_ack"`
+	}
+	if err := json.Unmarshal(data, &acknowledgement); err != nil {
+		return err
+	}
+	if len(acknowledgement.Value) != 0 &&
+		string(acknowledgement.Value) != "true" && string(acknowledgement.Value) != "false" {
+		return errors.New("provider require_input_ack must be a boolean")
+	}
 	*request = ProviderActionRequest{
 		ProtocolVersion: wire.ProtocolVersion,
 		Intent:          wire.Intent,
+		RequireInputAck: wire.RequireInputAck,
 		App:             wire.App,
 		AppIdentity:     wire.AppIdentity,
 		WindowHandle:    wire.WindowHandle,

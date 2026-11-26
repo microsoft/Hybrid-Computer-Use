@@ -44,8 +44,7 @@ internal static class GuiTextIntegrationTests
             result["gui_result"]?["input_actions_dispatched"]?.GetValue<int>() == 0 &&
             NativeDesktop.TextMessages.Count == 0 && NativeDesktop.InputIdleWaits == 0,
             "Empty text must not claim emission or consume a keyboard processing barrier.");
-        // A returned SendInput does not settle pointer focus. Neither a wait,
-        // screenshot nor a keyboard receipt proves the pointer was processed.
+        // Without receiver acknowledgement, stop at the queued action.
         foreach (var pointer in new[] {
             new JsonObject { ["type"] = "click", ["x"] = 5d, ["y"] = 5d },
             new JsonObject { ["type"] = "double_click", ["x"] = 5d, ["y"] = 5d },
@@ -62,12 +61,13 @@ internal static class GuiTextIntegrationTests
         })
         {
             NativeDesktop.Reset();
+            NativeDesktop.AcknowledgementProcessed = false;
             var oldFocus = NativeDesktop.Focus;
             failure = Fails(() => DesktopProvider.ExecuteBatch(Batch(
                 pointer.DeepClone(), intermediate.DeepClone(), Text("marker"),
                 new JsonObject { ["type"] = "click", ["x"] = 9d, ["y"] = 9d })));
-            Check(failure.Code == "desktop_input_failed" && failure.InputEventsEmitted &&
-                failure.MutationUnknown && failure.DispatchedActions == 2 &&
+            Check(failure.Code == "input_order_unconfirmed" && failure.InputEventsEmitted &&
+                failure.MutationUnknown && failure.DispatchedActions == 1 &&
                 NativeDesktop.Focus == oldFocus && NativeDesktop.TextMessages.Count == 0 &&
                 NativeDesktop.TextSelections.Count == 0 && NativeDesktop.TextWakes.Count == 0,
                 $"Pending {pointer["type"]} then {intermediate["type"]} must stop text: " +
@@ -76,6 +76,7 @@ internal static class GuiTextIntegrationTests
         foreach (var keys in new[] { "CTRL+A", "TAB", "LEFT", "CTRL", "ALT+TAB" })
         {
             NativeDesktop.Reset();
+            NativeDesktop.AcknowledgementProcessed = false;
             failure = Fails(() => DesktopProvider.ExecuteBatch(Batch(
                 new JsonObject { ["type"] = "keypress", ["keys"] = new JsonArray(keys) },
                 Text("marker"))));
@@ -94,7 +95,89 @@ internal static class GuiTextIntegrationTests
             new JsonObject { ["type"] = "click", ["x"] = 5d, ["y"] = 5d }));
         Check(result["ok"]!.GetValue<bool>() && NativeDesktop.TextMessages.Count == 5,
             "Text preceding pointer input must retain its existing behavior.");
-        Console.WriteLine("GUI text validation and failure integration tests passed (21 cases).");
+
+        NativeDesktop.Reset();
+        NativeDesktop.AcknowledgementAvailable = false;
+        failure = Fails(() => DesktopProvider.ExecuteBatch(Batch(Text("prefix"),
+            new JsonObject { ["type"] = "click", ["x"] = 5d, ["y"] = 5d }, Text("later"))));
+        Check(!failure.InputEventsEmitted && NativeDesktop.Calls.Count == 0 &&
+            NativeDesktop.TextMessages.Count == 0 && NativeDesktop.Captures.Count == 0,
+            "A missing acknowledgement helper must reject the whole mixed batch before its prefix.");
+
+        NativeDesktop.Reset();
+        NativeDesktop.OnAcknowledgement = () => NativeDesktop.Focus =
+            new(9, 10, 20, 21, 20, 22, 9);
+        failure = Fails(() => DesktopProvider.ExecuteBatch(Batch(
+            new JsonObject { ["type"] = "click", ["x"] = 5d, ["y"] = 5d }, Text("wrong app"))));
+        Check(failure.InputEventsEmitted && NativeDesktop.TextMessages.Count == 0 &&
+            NativeDesktop.AcknowledgementDisposals == 1,
+            "Text must retain the acknowledged original root if foreground changes afterward.");
+
+        NativeDesktop.Reset();
+        NativeDesktop.TextControlClass = "Edit";
+        NativeDesktop.OnTextSelection = _ =>
+        {
+            Check(NativeDesktop.AcknowledgementChecks >=
+                (NativeDesktop.TextSelections[^1].Text == "é" ? 3 : 2),
+                "Text overtook the click or selection acknowledgement.");
+            return true;
+        };
+        result = DesktopProvider.ExecuteBatch(Batch(
+            new JsonObject { ["type"] = "click", ["x"] = 5d, ["y"] = 5d },
+            new JsonObject { ["type"] = "keypress", ["keys"] = new JsonArray("CTRL+A") },
+            Text("中😀"),
+            new JsonObject { ["type"] = "keypress", ["keys"] = new JsonArray("TAB") },
+            Text("é")));
+        Check(result["ok"]!.GetValue<bool>() &&
+            string.Concat(NativeDesktop.TextSelections.Select(item => item.Text)) == "中😀é" &&
+            NativeDesktop.AcknowledgementDisposals == 3 &&
+            NativeDesktop.InputAcknowledgements[^1].Message == 0x101 &&
+            NativeDesktop.InputAcknowledgements[^1].Word == 0x09 &&
+            NativeDesktop.InputAcknowledgements.Select(item => item.Tag).Distinct().Count() ==
+                NativeDesktop.InputAcknowledgements.Count,
+            "Multi-field ordered input lost Unicode, receipt identity, final keyup or hook cleanup.");
+
+        NativeDesktop.Reset();
+        NativeDesktop.AfterSend = () =>
+        {
+            if (NativeDesktop.Calls.Count == 2) NativeDesktop.AcknowledgementTargetCurrent = false;
+        };
+        failure = Fails(() => DesktopProvider.ExecuteBatch(Batch(
+            new JsonObject { ["type"] = "drag", ["path"] = new JsonArray(
+                new JsonObject { ["x"] = 5d, ["y"] = 5d },
+                new JsonObject { ["x"] = 6d, ["y"] = 6d }) }, Text("never"))));
+        Check(failure.InputEventsEmitted && failure.MutationUnknown &&
+            NativeDesktop.Calls.Count == 3 && NativeDesktop.Calls[^1][0].Flags == 4 &&
+            NativeDesktop.TextMessages.Count == 0,
+            "Losing the drag receiver must still release its held button and stop text.");
+
+        NativeDesktop.Reset();
+        NativeDesktop.AfterSend = () => NativeDesktop.AcknowledgementTargetCurrent = false;
+        failure = Fails(() => DesktopProvider.ExecuteBatch(Batch(
+            new JsonObject { ["type"] = "keypress", ["keys"] = new JsonArray("CTRL", "A") }, Text("never"))));
+        Check(failure.InputEventsEmitted && failure.MutationUnknown &&
+            NativeDesktop.Calls.Count == 2 && NativeDesktop.Calls[^1].All(value => (value.Flags & 2) != 0) &&
+            NativeDesktop.TextMessages.Count == 0,
+            "Losing the keyboard receiver must release the entire chord and stop text.");
+
+        NativeDesktop.Reset();
+        NativeDesktop.ReceiptSequence = int.MaxValue - 1;
+        result = DesktopProvider.ExecuteBatch(Batch(
+            new JsonObject { ["type"] = "click", ["x"] = 5d, ["y"] = 5d }, Text("x")));
+        Check(result["ok"]!.GetValue<bool>() &&
+            NativeDesktop.InputAcknowledgements[0].Tag == int.MaxValue &&
+            NativeDesktop.InputAcknowledgements[1].Tag == 1,
+            "Mouse receipt tags must survive DWORD truncation, sign extension and counter wrap.");
+
+        NativeDesktop.Reset();
+        NativeDesktop.OnAcknowledgement = () => NativeDesktop.AcknowledgementProcessed =
+            NativeDesktop.OrderTicks >= 17;
+        result = DesktopProvider.ExecuteBatch(Batch(
+            new JsonObject { ["type"] = "keypress", ["keys"] = new JsonArray("LEFT") }, Text("x")));
+        Check(result["ok"]!.GetValue<bool>() && NativeDesktop.OrderTicks == 17 &&
+            NativeDesktop.TextMessages.Count == 1,
+            "Ordering must wait for actual acknowledgement, not a fixed number of polls.");
+        Console.WriteLine("GUI text validation and ordered input integration tests passed.");
     }
 
     private static JsonObject Text(string value) => new() { ["type"] = "type", ["text"] = value };

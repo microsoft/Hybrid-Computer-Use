@@ -611,9 +611,22 @@ def _validate_payload(operation, payload):
                 "input",
                 "window_bounds",
                 "observation",
+                "require_input_ack",
             },
             ("protocol_version", "intent", "app"),
         )
+        if "require_input_ack" in payload:
+            if not isinstance(payload["require_input_ack"], bool):
+                raise ProviderRequestError(
+                    "invalid_provider_request", "action.require_input_ack must be a boolean"
+                )
+            if payload["require_input_ack"] and payload["intent"] not in (
+                "click", "scroll", "keypress", "set_value"
+            ):
+                raise ProviderRequestError(
+                    "invalid_provider_request",
+                    "require_input_ack requires a potentially queued input action",
+                )
         _non_empty_string(payload["app"], "action.app")
         _validate_app_identity(payload.get("app_identity"), "action.app_identity")
         _validate_expected_window(

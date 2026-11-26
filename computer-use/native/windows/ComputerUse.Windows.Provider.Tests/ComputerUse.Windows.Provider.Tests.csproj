@@ -18,6 +18,10 @@
       Link="WindowsWindowReferenceRead.cs" />
     <Compile Include="../ComputerUse.Windows.Runtime/DocumentTextRead.cs"
       Link="DocumentTextRead.cs" />
+    <Compile Include="../ComputerUse.Windows.Runtime/WindowsTextRead.cs"
+      Link="WindowsTextRead.cs" />
+    <Compile Include="../ComputerUse.Windows.Runtime/WindowsReadOnlyDeadline.cs"
+      Link="WindowsReadOnlyDeadline.cs" />
     <Compile Include="../ComputerUse.Windows.Runtime/UiaSelectionPolicy.cs"
       Link="UiaSelectionPolicy.cs" />
     <Compile Include="../ComputerUse.Windows.Runtime/UiaSemanticWindowPredicate.cs"
@@ -142,11 +146,23 @@
       Include="../ComputerUse.Windows.Runtime/UiaSetValueRouting.cs"
       Link="UiaSetValueRouting.cs" />
     <Compile
+      Include="../ComputerUse.Windows.Runtime/WindowsScrollPlan.cs"
+      Link="WindowsScrollPlan.cs" />
+    <Compile
       Include="../ComputerUse.Windows.Runtime/UiaClickRouting.cs"
       Link="UiaClickRouting.cs" />
     <Compile
       Include="../ComputerUse.Windows.Runtime/SemanticResolutionRetry.cs"
       Link="SemanticResolutionRetry.cs" />
+    <Compile
+      Include="../ComputerUse.Windows.Runtime/UiaElementReadRecovery.cs"
+      Link="UiaElementReadRecovery.cs" />
+    <Compile
+      Include="../ComputerUse.Windows.Runtime/UiaComboBoxOptionOwner.cs"
+      Link="UiaComboBoxOptionOwner.cs" />
+    <Compile
+      Include="../ComputerUse.Windows.Runtime/UiaComboBoxOptionSearch.cs"
+      Link="UiaComboBoxOptionSearch.cs" />
     <Compile
       Include="../ComputerUse.Windows.Runtime/ResolutionCandidateScope.cs"
       Link="ResolutionCandidateScope.cs" />

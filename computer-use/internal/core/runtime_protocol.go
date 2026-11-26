@@ -4,6 +4,7 @@ package core
 // provider boundary; operation-specific request builders translate it into
 // typed provider requests.
 type AXServiceRequest struct {
+	RequireInputAck    bool                 `json:"-"`
 	Operation          axServiceOperation   `json:"-"`
 	App                string               `json:"app,omitempty"`
 	AppIdentity        *ProviderAppIdentity `json:"appIdentity,omitempty"`

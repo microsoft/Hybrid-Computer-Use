@@ -50,9 +50,11 @@ internal sealed partial class ProviderServer : IDisposable
                         RequiredPayload(request, "observe"));
                     break;
                 case "resolve_and_act":
-                    ValidateWindowsActionCapabilities(RequiredPayload(request, "action"));
-                    response["accessibility"] = _uia.ResolveAndAct(
-                        RequiredPayload(request, "action"));
+                    var action = RequiredPayload(request, "action");
+                    ValidateWindowsActionCapabilities(action);
+                    response["accessibility"] = action["observation"]?["text_read"] is JsonObject
+                        ? _uia.ReadText(action)
+                        : _uia.ResolveAndAct(action);
                     break;
                 case "desktop_execute_batch":
                     response["desktop"] = DesktopProvider.ExecuteBatch(

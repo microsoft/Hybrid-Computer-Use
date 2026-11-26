@@ -256,6 +256,10 @@ func recordFromEvidence(name string, result ToolCallResult) Record {
 		if item.Type != "text" {
 			continue
 		}
+		if result.StructuredContent["text_page"] != nil {
+			text = append(text, item.Text)
+			continue
+		}
 		if trimmed := strings.TrimRight(item.Text, "\n"); trimmed != "" {
 			text = append(text, trimmed)
 		}

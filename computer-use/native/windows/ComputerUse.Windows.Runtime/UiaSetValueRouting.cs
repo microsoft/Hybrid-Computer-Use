@@ -4,6 +4,22 @@ namespace ComputerUse.Windows.Runtime;
 
 internal static class UiaSetValueRouting
 {
+    internal static bool AllowsValueWrite(
+        string canonicalRole, bool hasLegacyIAccessible, bool hasNativeRuntimeIdentity) =>
+        canonicalRole != "cell" || !hasLegacyIAccessible || hasNativeRuntimeIdentity;
+
+    internal static void RequireValueWriteAllowed(
+        string canonicalRole, bool hasLegacyIAccessible, bool hasNativeRuntimeIdentity)
+    {
+        if (!AllowsValueWrite(canonicalRole, hasLegacyIAccessible, hasNativeRuntimeIdentity))
+        {
+            throw new ProviderFailureException(
+                "capability_unsupported", "precondition",
+                "MSAA-projected cell Value writes can change only accessibility state, without editing the cell. " +
+                "No value was sent. Select the cell with pointer input, observe the current selection, then type and commit through keyboard input.");
+        }
+    }
+
     internal static bool PrefersDocumentInput(
         bool documentControl,
         bool writableValueAvailable,

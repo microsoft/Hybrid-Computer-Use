@@ -7,6 +7,33 @@ import json
 from runtime_test_support import *  # noqa: F401,F403
 
 
+class InputAcknowledgementProtocolTests(AtspiPatchedTestCase):
+    def request(self):
+        fixture = Path(__file__).resolve().parents[1] / "testdata/provider-wire/input-ack.request.json"
+        return json.loads(fixture.read_text())
+
+    def test_windows_acknowledgement_stops_before_linux_dispatch(self):
+        request = self.request()
+        runtime.validate_request(request)
+        with self.assertRaises(runtime.OperationFailure) as caught:
+            runtime.perform_provider_request("resolve_and_act", request["action"])
+        self.assertEqual(caught.exception.failure_code, "capability_unsupported")
+        self.assertFalse(caught.exception.input_events_emitted)
+
+    def test_acknowledgement_requires_boolean_and_queued_intent(self):
+        for value in (None, "true", 1, [], {}):
+            request = self.request()
+            request["action"]["require_input_ack"] = value
+            with self.subTest(value=value), self.assertRaises(runtime.ProviderRequestError):
+                runtime.validate_request(request)
+        request = self.request()
+        request["action"].update(intent="type", input={"text": "hello"})
+        with self.assertRaises(runtime.ProviderRequestError):
+            runtime.validate_request(request)
+        request["action"]["require_input_ack"] = False
+        runtime.validate_request(request)
+
+
 class TextReadProtocolTests(AtspiPatchedTestCase):
     def test_linux_text_read_wire_fixtures(self):
         fixtures = Path(__file__).resolve().parents[1] / "testdata" / "provider-wire"

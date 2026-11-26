@@ -409,6 +409,10 @@ func renameAXWaitEvidence(value any) any {
 }
 
 func delimitAXTextContent(result ToolCallResult) ToolCallResult {
+	if result.StructuredContent["text_page"] != nil {
+		// Text pages carry an exact character count; a display delimiter would change the payload.
+		return result
+	}
 	for index := range result.Content {
 		if result.Content[index].Type != "text" {
 			continue

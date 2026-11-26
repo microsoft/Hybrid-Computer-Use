@@ -38,10 +38,10 @@ internal sealed partial class ProviderServer
         {
             underlyingCode = failureCode;
             failureCode = "effect_unknown";
-            if (failure?.Code == "desktop_input_failed")
+            if (failure?.Code == "desktop_input_failed" ||
+                failure?.Phase == "input_acknowledgement")
             {
-                // The native failure identifies an unsent suffix or unknown
-                // message. Keep that recovery instruction with the prefix.
+                // Preserve the failing input stage and its recovery instruction.
                 failureMessage = error.Message;
             }
             else if (inputEmitted)

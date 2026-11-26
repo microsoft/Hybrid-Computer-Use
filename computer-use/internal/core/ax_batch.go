@@ -84,7 +84,6 @@ func (s *Service) executeAXBatchAction(
 			noDeclaredTarget,
 			action.value,
 			obs,
-			context.windowsQueuedInputPending,
 		).withEvidenceScope("delivery_or_local_ui")
 	case "select":
 		return s.selectRange(
@@ -213,10 +212,12 @@ func (s *Service) axBatchRun(
 	if err := s.preflightPlatformAXKeys(actions); err != nil {
 		return axBatchPreflightError(err, requested)
 	}
+	inputAcknowledgements := make([]bool, len(actions))
 	if s.platformBackend().HostInfo().Platform == "windows" {
 		if err := preflightWindowsAXKeys(actions); err != nil {
 			return axBatchPreflightError(err, requested)
 		}
+		inputAcknowledgements = windowsAXInputAcknowledgements(actions)
 	}
 	contexts, err := s.deriveAXBatchContexts(windowRef, actions, focus)
 	if err != nil {
@@ -244,6 +245,9 @@ func (s *Service) axBatchRun(
 	for _, action := range actions {
 		guarded = guarded || action.actionType == "wait" || action.actionType == "activate"
 	}
+	for _, required := range inputAcknowledgements {
+		guarded = guarded || required
+	}
 	if _, available := orderedInputBackend(s.platformBackend()); available && !guarded {
 		requests, err := providerOrderedInputRequestsFromPlan(context, executionPlan, actions)
 		if err != nil {
@@ -261,9 +265,7 @@ func (s *Service) axBatchRun(
 	for index := 0; index < len(actions); index++ {
 		action := actions[index]
 		if action.actionType == "activate" {
-			pending := context.windowsQueuedInputPending
 			context = contexts[index]
-			context.windowsQueuedInputPending = pending
 			context.report = trace
 			trace.appToken = context.AppToken
 			trace.windowRef = context.WindowRef
@@ -297,6 +299,7 @@ func (s *Service) axBatchRun(
 			index < len(actions)-1 && index == lastInput,
 		)
 		actionObservation.lightReadback = axBatchLightReadback(actions, index, lastInput)
+		actionObservation.requireInputAck = inputAcknowledgements[index]
 		windowAction := action.actionType == "activate" ||
 			action.actionType == "close"
 		if context.boundByFocus {
@@ -336,25 +339,8 @@ func (s *Service) axBatchRun(
 		} else {
 			if err := s.validateAXActionWindow(context, action, index); err != nil {
 				result = axBatchPreflightError(err, requested)
-			} else if context.windowsQueuedInputPending && action.actionType == "type" && action.text != "" {
-				result = TextResult("Earlier queued input has not been confirmed processed; no text was sent. Observe and confirm focus and selection before sending text separately; do not repeat the earlier input.", true)
-				result.StructuredContent = map[string]any{
-					"failure_code": "desktop_input_failed", "failure_phase": "preparation",
-					"input_events_emitted": false, "mutation_unknown": true,
-					"observation_required": true,
-				}
 			} else {
 				result = s.executeAXBatchAction(context, action, actionObservation)
-			}
-			if s.platformBackend().HostInfo().Platform == "windows" &&
-				(action.actionType == "keypress" || action.actionType == "click" || action.actionType == "scroll") {
-				context.windowsQueuedInputPending = true
-			}
-			if s.platformBackend().HostInfo().Platform == "windows" {
-				if evidence, ok := result.StructuredContent["runtime_action_evidence"].(RuntimeActionEvidence); ok &&
-					evidence.Route == "uia.text_select_and_send_input.document_replace" {
-					context.windowsQueuedInputPending = true
-				}
 			}
 			if s.noTreeWindowEntry(context.WindowRef) == nil && (!result.IsError ||
 				(action.actionType == "close" &&

@@ -200,7 +200,8 @@ type observation struct {
 	captureSnapshot *bool
 	// lightReadback asks for a post-action read of the window root only;
 	// see axBatchLightReadback.
-	lightReadback bool
+	lightReadback   bool
+	requireInputAck bool
 }
 
 func (o observation) resolvedMode() string {

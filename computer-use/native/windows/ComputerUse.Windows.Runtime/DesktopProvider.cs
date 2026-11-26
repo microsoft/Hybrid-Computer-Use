@@ -5,7 +5,6 @@ namespace ComputerUse.Windows.Runtime;
 
 internal static class DesktopProvider
 {
-    private const int KeyboardInputIdleTimeoutMilliseconds = 250;
     private const double MaximumScrollDelta = 2000;
 
     internal static JsonObject ExecuteBatch(JsonObject request)
@@ -24,12 +23,20 @@ internal static class DesktopProvider
             desktopBounds.Width,
             desktopBounds.Height);
         ValidateBatch(actions, deliveredSize.Width, deliveredSize.Height);
+        var lastText = -1;
+        for (var index = 0; index < actions.Count; index++)
+            if (actions[index]?["type"]?.GetValue<string>() == "type" &&
+                (actions[index]?["text"]?.GetValue<string>() ?? "").Length > 0)
+                lastText = index;
+        if (actions.Take(Math.Max(0, lastText)).Any(action =>
+            IsQueuedAction(action?["type"]?.GetValue<string>() ?? "")))
+            NativeDesktop.RequireInputAcknowledgementSupport();
         var before = NativeDesktop.Capture();
         var requestedFrame = request["frame_id"]?.GetValue<string>() ?? string.Empty;
         var dispatched = 0;
         var inputActions = 0;
         var inputEmitted = false;
-        var queuedInputPending = false;
+        nint expectedTextRoot = 0;
 
         for (var index = 0; index < actions.Count; index++)
         {
@@ -63,33 +70,20 @@ internal static class DesktopProvider
                             "Desktop layout changed before coordinate input.");
                     }
                 }
-                // SendInput is queued; a screenshot, sleep or queue-removal
-                // receipt cannot prove its focus/selection effects completed.
-                // Synchronous text must not overtake queued mouse or key input.
-                if (type == "type" && currentIsInput && queuedInputPending)
-                {
-                    throw new ProviderFailureException(
-                        "desktop_input_failed", "preparation",
-                        "Earlier queued input has not been confirmed processed; no text was sent. " +
-                        "Observe and confirm the intended focus and selection before sending text separately; do not repeat the earlier input.",
-                        inputEventsEmitted: true, mutationUnknown: true);
-                }
-                Execute(action, type, before);
-                queuedInputPending |= RequiresCoordinate(type) || type == "keypress";
+                using var ordered = index < lastText && IsQueuedAction(type)
+                    ? NativeDesktop.BeginOrderedInput(InputReceiver(action, type, before))
+                    : null;
+                Execute(action, type, before, expectedTextRoot);
                 dispatched++;
                 if (currentIsInput)
                 {
                     inputActions++;
                     inputEmitted = true;
                 }
-                if (currentIsInput && IsKeyboardAction(type) &&
-                    index + 1 < actions.Count &&
-                    actions[index + 1] is JsonObject nextAction &&
-                    IsInputAction(UiaProvider.RequiredString(nextAction, "type")))
+                if (ordered is not null)
                 {
-                    // The next input waits until the foreground application
-                    // has processed this key, instead of a fixed delay.
-                    NativeDesktop.WaitForForegroundInputIdle(KeyboardInputIdleTimeoutMilliseconds);
+                    ordered.Complete();
+                    expectedTextRoot = ordered.Root;
                 }
             }
             catch (ProviderFailureException error)
@@ -288,7 +282,8 @@ internal static class DesktopProvider
     private static void Execute(
         JsonObject action,
         string type,
-        NativeDesktop.ScreenFrame frame)
+        NativeDesktop.ScreenFrame frame,
+        nint expectedTextRoot)
     {
         var (x, y) = Point(action, frame);
         switch (type)
@@ -341,7 +336,8 @@ internal static class DesktopProvider
                 return;
             case "type":
                 NativeDesktop.TypeText(
-                    action["text"]?.GetValue<string>() ?? string.Empty);
+                    action["text"]?.GetValue<string>() ?? string.Empty,
+                    expectedTextRoot);
                 return;
             case "keypress":
                 var keys = (action["keys"] as JsonArray ?? new JsonArray())
@@ -402,6 +398,19 @@ internal static class DesktopProvider
     private static bool IsKeyboardAction(string type)
     {
         return type is "type" or "keypress";
+    }
+
+    private static bool IsQueuedAction(string type) =>
+        RequiresCoordinate(type) || type == "keypress";
+
+    private static nint InputReceiver(
+        JsonObject action, string type, NativeDesktop.ScreenFrame frame)
+    {
+        if (type == "keypress") return NativeDesktop.KeyboardInputWindow();
+        var point = type == "drag"
+            ? ImagePoint((JsonObject)((JsonArray)action["path"]!)[0]!, frame)
+            : Point(action, frame);
+        return NativeDesktop.PointerInputWindow(point.Item1, point.Item2);
     }
 
     private static bool IsInputAction(string type)

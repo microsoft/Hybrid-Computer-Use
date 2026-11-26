@@ -60,7 +60,8 @@ internal sealed record UiaNodeFacts(
     double? RangeValueNumber,
     bool RangeValueReadOnly,
     ToggleState? ToggleState,
-    bool? IsSelected)
+    bool? IsSelected,
+    bool LegacyIAccessible = false)
 {
     internal bool HasKeyboardFocus => KeyboardFocus.Value == true;
 }
@@ -195,6 +196,7 @@ internal sealed class UiaSnapshotCache
                      patterns.ExpandCollapsePattern.AvailabilityProperty!,
                      patterns.ScrollItemPattern.AvailabilityProperty!,
                      patterns.WindowPattern.AvailabilityProperty!,
+                     patterns.LegacyIAccessiblePattern.AvailabilityProperty!,
                      _automation.PropertyLibrary.Value.Value,
                      _automation.PropertyLibrary.Value.IsReadOnly,
                      _automation.PropertyLibrary.RangeValue.Value,
@@ -251,7 +253,8 @@ internal sealed class UiaSnapshotCache
             TryRead<double>(library.RangeValue.Value, out var rangeValue) ? rangeValue : null,
             !TryRead<bool>(library.RangeValue.IsReadOnly, out var rangeReadOnly) || rangeReadOnly,
             TryRead<ToggleState>(library.Toggle.ToggleState, out var toggleState) ? toggleState : null,
-            TryRead<bool>(library.SelectionItem.IsSelected, out var selected) ? selected : null);
+            TryRead<bool>(library.SelectionItem.IsSelected, out var selected) ? selected : null,
+            TryRead<bool>(patterns.LegacyIAccessiblePattern.AvailabilityProperty!, out var legacy) && legacy);
 
         bool TryRead<T>(PropertyId property, out T result)
         {
